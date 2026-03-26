@@ -1,4 +1,4 @@
-SETUP
+SETUP - Node.js 22.22.2
 
-npm install
-npm run dev
+npm install -g pnpm
+pnpm run dev
