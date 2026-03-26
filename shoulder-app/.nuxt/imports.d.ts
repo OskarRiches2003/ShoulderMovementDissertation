@@ -31,5 +31,6 @@ export { setInterval } from '#app/compat/interval';
 export { definePageMeta } from '../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/pages/runtime/composables';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { usePoseLandmarker } from '../composables/usePoseLandmarker';
-export { angleBetweenThreePoints, calculateAbductionAngle, smoothAngle, formatDegrees } from '../utils/angleCalculations';
+export { angleBetweenThreePoints, calculateAbductionAngle, calculateFlexionAngle, calculateRotationAngle, smoothAngle, formatDegrees } from '../utils/angleCalculations';
+export { MOVEMENT_CONFIGS, DEFAULT_MOVEMENT } from '../utils/movementConfigs';
 export { useNuxtDevTools } from '../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._e004bd758379d21ac084c47943fe1706/node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';

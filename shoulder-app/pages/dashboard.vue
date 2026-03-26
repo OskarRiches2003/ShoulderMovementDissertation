@@ -2,7 +2,7 @@
   <div class="dash-page">
     <header class="header">
       <div class="header-inner">
-        <span class="logo">SHOULDER<span class="logo-accent">TRACK</span></span>
+        <span class="logo">PLACEHOLDER<span class="logo-accent">LOGO</span></span>
         <nav class="nav">
           <NuxtLink to="/" class="nav-link">Capture</NuxtLink>
           <NuxtLink to="/dashboard" class="nav-link active">Dashboard</NuxtLink>
