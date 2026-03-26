@@ -1,15 +1,15 @@
 /**
  * angleCalculations.ts
  *
- * Pure, framework-free functions for computing joint angles from MediaPipe
+ * Functions for computing joint angles from MediaPipe
  * landmarks. All heavy computation lives here so it is easy to unit-test
  * independently of Vue / MediaPipe.
  *
  * Coordinate conventions
  * ──────────────────────
  * MediaPipe normalised coords: x right (0→1), y down (0→1), z depth (negative = closer).
- * For 2-D (frontal/sagittal) calculations we intentionally ignore Z — depth
- * estimation is MediaPipe's weakest axis and adds noise.
+ * For 2D calculations we intentionally ignore Z depth
+ * estimation as it is MediaPipe's weakest axis and adds noise.
  * For rotation we use Z carefully and note the limitation in comments.
  *
  * All angles returned in degrees, range 0–180, or null if landmarks are
@@ -32,7 +32,7 @@ function dot2(a: Vec2, b: Vec2): number { return a.x * b.x + a.y * b.y }
 function dot3(a: Vec3, b: Vec3): number { return a.x * b.x + a.y * b.y + a.z * b.z }
 
 /**
- * Angle at vertex B between rays B→A and B→C, in 2-D image space.
+ * Angle at vertex B between rays B→A and B→C, in 2D image space.
  */
 export function angleBetweenThreePoints(a: Vec2, b: Vec2, c: Vec2): number {
   const ba = sub2(a, b)
@@ -43,7 +43,7 @@ export function angleBetweenThreePoints(a: Vec2, b: Vec2, c: Vec2): number {
 }
 
 /**
- * Angle between two 3-D vectors (used for rotation).
+ * Angle between two 3D vectors (used for rotation).
  */
 function angleBetweenVectors3D(a: Vec3, b: Vec3): number {
   const denom = mag3(a) * mag3(b)
@@ -80,7 +80,7 @@ export function calculateAbductionAngle(
  * guides the user to reposition.
  *
  * The function is a named alias to make intent explicit in calling code
- * and to allow future divergence (e.g. adding a forward-tilt correction).
+ * and to allow future divergence.
  * Normal ROM: 0–180°.
  */
 export function calculateFlexionAngle(
@@ -108,7 +108,7 @@ export function calculateFlexionAngle(
  * Limitation: MediaPipe's Z (depth) axis is estimated, not measured, so
  * results are less reliable than abduction/flexion. Confidence is highest
  * when the camera is directly in front and the patient's elbow is clearly
- * visible. This limitation should be noted in your dissertation evaluation.
+ * visible. Note this limitation in diss evaluation.
  *
  * Returns degrees from –90 (full internal) to +90 (full external), or null.
  * Normal ROM: internal ~70°, external ~90°.
@@ -155,7 +155,6 @@ export function calculateRotationAngle(
 // ─── Smoothing ────────────────────────────────────────────────────────────────
 /**
  * Exponential moving average — reduces frame-to-frame jitter.
- * alpha 0.3 balances responsiveness vs smoothness well for 30fps input.
  */
 export function smoothAngle(
   previous: number | null,
