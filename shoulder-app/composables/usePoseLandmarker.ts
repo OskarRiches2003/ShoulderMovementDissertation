@@ -1,11 +1,11 @@
 /**
- * usePoseLandmarker.ts
  *
- * Handles the full MediaPipe Tasks Vision lifecycle and exposes reactive
+ * Handles the full MediaPipe lifecycle and uses reactive
  * angle data driven by whichever MovementConfig is currently active.
  *
  * The composable is movement-agnostic: it calls config.calculate() each
  * frame, so switching movements requires no changes here.
+ * 
  */
 
 import { ref, type Ref } from 'vue'
