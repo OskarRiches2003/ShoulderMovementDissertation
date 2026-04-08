@@ -32,5 +32,5 @@ export { definePageMeta } from '../node_modules/.pnpm/nuxt@3.21.2_@parcel+watche
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { usePoseLandmarker } from '../composables/usePoseLandmarker';
 export { angleBetweenThreePoints, calculateAbductionAngle, calculateFlexionAngle, calculateRotationAngle, smoothAngle, formatDegrees } from '../utils/angleCalculations';
-export { MOVEMENT_CONFIGS, DEFAULT_MOVEMENT } from '../utils/movementConfigs';
+export { MOVEMENT_CONFIGS, MOVEMENT_CONFIG_MAP, DEFAULT_MOVEMENT } from '../utils/movementConfigs';
 export { useNuxtDevTools } from '../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._e004bd758379d21ac084c47943fe1706/node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';

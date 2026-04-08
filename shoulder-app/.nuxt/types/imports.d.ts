@@ -3,6 +3,7 @@ export {}
 declare global {
   const DEFAULT_MOVEMENT: typeof import('../../utils/movementConfigs').DEFAULT_MOVEMENT
   const MOVEMENT_CONFIGS: typeof import('../../utils/movementConfigs').MOVEMENT_CONFIGS
+  const MOVEMENT_CONFIG_MAP: typeof import('../../utils/movementConfigs').MOVEMENT_CONFIG_MAP
   const abortNavigation: typeof import('../../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/composables/router').abortNavigation
   const addRouteMiddleware: typeof import('../../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/composables/router').addRouteMiddleware
   const angleBetweenThreePoints: typeof import('../../utils/angleCalculations').angleBetweenThreePoints
@@ -197,6 +198,7 @@ declare module 'vue' {
   interface ComponentCustomProperties {
     readonly DEFAULT_MOVEMENT: UnwrapRef<typeof import('../../utils/movementConfigs')['DEFAULT_MOVEMENT']>
     readonly MOVEMENT_CONFIGS: UnwrapRef<typeof import('../../utils/movementConfigs')['MOVEMENT_CONFIGS']>
+    readonly MOVEMENT_CONFIG_MAP: UnwrapRef<typeof import('../../utils/movementConfigs')['MOVEMENT_CONFIG_MAP']>
     readonly abortNavigation: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/composables/router')['abortNavigation']>
     readonly addRouteMiddleware: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/composables/router')['addRouteMiddleware']>
     readonly angleBetweenThreePoints: UnwrapRef<typeof import('../../utils/angleCalculations')['angleBetweenThreePoints']>
