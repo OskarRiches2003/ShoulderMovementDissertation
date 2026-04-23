@@ -1,11 +1,10 @@
 <template>
   <div class="capture-page">
-
     <header class="header">
       <div class="header-inner">
         <span class="logo">PLACEHOLDER<span class="logo-accent">LOGO</span></span>
         <nav class="nav">
-          <NuxtLink to="/" class="nav-link active">Capture</NuxtLink>
+          <NuxtLink to="/capture" class="nav-link active">Capture</NuxtLink>
           <NuxtLink to="/dashboard" class="nav-link">Dashboard</NuxtLink>
           <NuxtLink to="/practitioner" class="nav-link">Practitioner</NuxtLink>
         </nav>
@@ -13,10 +12,8 @@
     </header>
 
     <main class="main">
-
-      <!-- Camera panel -->
       <section class="camera-panel">
-        <div class="camera-wrap" :class="{ running: isRunning }">
+        <div class="camera-wrap" :class="{ running: isRunning, locked: measurement.isLocked.value }">
           <video ref="videoEl" class="video-hidden" playsinline muted />
           <canvas ref="canvasEl" class="canvas-output" />
 
@@ -28,18 +25,32 @@
             </div>
             <p>Camera not started</p>
           </div>
-
           <div v-if="isLoading" class="camera-placeholder">
-            <div class="spinner" />
-            <p>Loading model…</p>
+            <div class="spinner" /><p>Loading model…</p>
           </div>
 
+          <!-- Camera orientation badge -->
           <div v-if="isRunning" class="orientation-badge">
             {{ activeConfig.cameraView === 'frontal' ? 'Face camera' : 'Side-on to camera' }}
           </div>
 
-          <div v-if="isRecording" class="rec-badge">
-            <span class="rec-dot" /> REC
+          <!-- Locked overlay -->
+          <div v-if="measurement.isLocked.value" class="locked-overlay">
+            <div class="locked-icon">✓</div>
+            <p class="locked-text">Measurement captured</p>
+          </div>
+        </div>
+
+        <!-- Active arm indicator — shown whenever camera is running -->
+        <div v-if="isRunning" class="arm-indicator">
+          <div class="arm-chip" :class="{ active: showLeft, inactive: !showLeft }">
+            <span class="arm-dot" />
+            Left arm
+          </div>
+          <div class="arm-divider" />
+          <div class="arm-chip" :class="{ active: showRight, inactive: !showRight }">
+            <span class="arm-dot" />
+            Right arm
           </div>
         </div>
 
@@ -48,36 +59,29 @@
             {{ isLoading ? 'Loading…' : 'Start Camera' }}
           </button>
           <template v-else>
-            <button
-              class="btn"
-              :class="isRecording ? 'btn-danger' : 'btn-record'"
-              @click="toggleRecording"
-            >
-              {{ isRecording ? 'Stop Recording' : 'Record Session' }}
-            </button>
+            <button class="btn btn-reset-sm" @click="handleReset">↺ Reset</button>
             <button class="btn btn-ghost" @click="stop">Stop Camera</button>
           </template>
         </div>
-
         <p v-if="error" class="error-msg">⚠ {{ error }}</p>
       </section>
 
       <!-- Readout panel -->
       <aside class="readout-panel">
 
-        <!-- Patient notes banner (directed mode only) -->
-        <div v-if="sessionConfig && sessionConfig.notes" class="notes-banner">
+        <!-- Patient notes (directed mode) -->
+        <div v-if="sessionConfig?.notes" class="notes-banner">
           <span class="notes-icon">📋</span>
           <p class="notes-text">{{ sessionConfig.notes }}</p>
         </div>
 
-        <!-- Directed mode: step indicator -->
+        <!-- Step indicator (directed mode) -->
         <div v-if="isDirectedMode" class="step-indicator">
-          <span class="step-label">Movement</span>
+          <span class="step-label">Step</span>
           <span class="step-count">{{ currentStepIndex + 1 }} / {{ directedSteps.length }}</span>
         </div>
 
-        <!-- Movement selector: tabs (free mode) or read-only label (directed mode) -->
+        <!-- Movement tabs (free mode only) -->
         <div v-if="!isDirectedMode" class="movement-selector">
           <p class="selector-label">Movement</p>
           <div class="selector-tabs">
@@ -100,43 +104,46 @@
           <p class="movement-instruction">{{ activeConfig.instruction }}</p>
         </div>
 
-        <!-- Gauges -->
-        <h2 class="panel-title">Live Measurements</h2>
-        <div class="gauge-grid">
-          <AngleGauge
-            v-if="showLeft"
-            label="Left"
-            :angle="angles.left"
-            :normalRange="activeConfig.normalRange"
-          />
-          <AngleGauge
-            v-if="showRight"
-            label="Right"
-            :angle="angles.right"
-            :normalRange="activeConfig.normalRange"
-          />
+        <!-- Measurement -->
+        <div class="measurement-section">
+          <h2 class="panel-title">Measurement</h2>
+
+          <div class="status-pill" :class="measurement.state.value">
+            {{ statusLabel }}
+          </div>
+
+          <div class="gauge-grid">
+            <MeasurementGauge
+              v-if="showLeft"
+              label="Left"
+              :liveAngle="angles.left"
+              :lockedAngle="measurement.lockedLeft.value"
+              :holdProgress="measurement.holdProgressLeft.value"
+              :normalRange="activeConfig.normalRange"
+            />
+            <MeasurementGauge
+              v-if="showRight"
+              label="Right"
+              :liveAngle="angles.right"
+              :lockedAngle="measurement.lockedRight.value"
+              :holdProgress="measurement.holdProgressRight.value"
+              :normalRange="activeConfig.normalRange"
+            />
+          </div>
         </div>
 
-        <!-- Symmetry (only when both sides are shown) -->
-        <div v-if="showLeft && showRight && bothVisible" class="symmetry-row">
-          <span class="sym-label">Asymmetry</span>
-          <span class="sym-value" :class="symmetryClass">{{ symmetryDiff }}°</span>
-        </div>
-
-        <!-- Directed mode: next step button -->
-        <div v-if="isDirectedMode" class="directed-controls">
-          <button
-            v-if="!isLastStep"
-            class="btn btn-primary"
-            @click="nextStep"
-          >
+        <!-- Post-lock actions -->
+        <div v-if="measurement.isLocked.value" class="locked-actions">
+          <div class="locked-summary">
+            <div v-for="r in measurement.results.value" :key="r.side" class="locked-result">
+              <span class="locked-result-side">{{ r.side }}</span>
+              <span class="locked-result-value">{{ Math.round(r.degrees) }}°</span>
+            </div>
+          </div>
+          <button v-if="isDirectedMode && !isLastStep" class="btn btn-primary btn-full" @click="nextStep">
             Next Movement →
           </button>
-          <button
-            v-else
-            class="btn btn-finish"
-            @click="finishSession"
-          >
+          <button v-else-if="isDirectedMode && isLastStep" class="btn btn-finish btn-full" @click="finishSession">
             Finish Session ✓
           </button>
         </div>
@@ -148,56 +155,40 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute }                  from 'vue-router'
-import { usePoseLandmarker }         from '~/composables/usePoseLandmarker'
+import { usePoseLandmarker }        from '~/composables/usePoseLandmarker'
+import { useMeasurement }           from '~/composables/useMeasurement'
 import { MOVEMENT_CONFIGS, MOVEMENT_CONFIG_MAP, DEFAULT_MOVEMENT } from '~/utils/movementConfigs'
-import { decodeSessionConfig }       from '~/types/pose'
+import { decodeSessionConfig }      from '~/types/pose'
 import type { MovementConfig, SessionConfig } from '~/types/pose'
 
-const route    = useRoute()
 const videoEl  = ref<HTMLVideoElement | null>(null)
 const canvasEl = ref<HTMLCanvasElement | null>(null)
 
-// ── Session config (present only when launched from practitioner app) ─────────
-const sessionConfig = ref<SessionConfig | null>(null)
-
-// Directed mode: ordered list of configs for this session
+const sessionConfig    = ref<SessionConfig | null>(null)
 const directedSteps    = ref<{ config: MovementConfig; side: string }[]>([])
 const currentStepIndex = ref(0)
 const isDirectedMode   = computed(() => directedSteps.value.length > 0)
 const isLastStep       = computed(() => currentStepIndex.value === directedSteps.value.length - 1)
 
-// ── Active movement ───────────────────────────────────────────────────────────
 const activeConfig = ref<MovementConfig>(DEFAULT_MOVEMENT)
 
-// Which sides to display gauges for in the current step
-const activeSide = ref<'left' | 'right' | 'both'>('both')
-const showLeft   = computed(() => activeSide.value === 'left'  || activeSide.value === 'both')
-const showRight  = computed(() => activeSide.value === 'right' || activeSide.value === 'both')
+// Which sides to show gauges for — driven by activeSides on the config
+const showLeft  = computed(() => activeConfig.value.activeSides.includes('left'))
+const showRight = computed(() => activeConfig.value.activeSides.includes('right'))
 
-const {
-  isLoading, isRunning, isRecording,
-  angles, error,
-  start, stop,
-  startRecording, stopRecording,
-  resetSmoothing,
-} = usePoseLandmarker(videoEl, canvasEl, activeConfig)
+const measurement = useMeasurement()
 
-// ── Read URL params on mount ──────────────────────────────────────────────────
+const { isLoading, isRunning, angles, error, start, stop, resetSmoothing } =
+  usePoseLandmarker(videoEl, canvasEl, activeConfig, measurement)
+
 onMounted(() => {
-  const params = new URLSearchParams(window.location.search)
-  const decoded = decodeSessionConfig(params)
-
-  if (decoded && decoded.movements.length > 0) {
+  const decoded = decodeSessionConfig(new URLSearchParams(window.location.search))
+  if (decoded?.movements.length) {
     sessionConfig.value = decoded
-
-    // Build the ordered step list from the prescribed movements
     directedSteps.value = decoded.movements.flatMap(pm => {
       const config = MOVEMENT_CONFIG_MAP.get(pm.movementType)
-      if (!config) return []
-      return [{ config, side: pm.side }]
+      return config ? [{ config, side: pm.side }] : []
     })
-
     applyStep(0)
   }
 })
@@ -206,50 +197,38 @@ function applyStep(index: number) {
   const step = directedSteps.value[index]
   if (!step) return
   activeConfig.value = step.config
-  activeSide.value   = step.side as 'left' | 'right' | 'both'
   resetSmoothing()
+  measurement.reset()
 }
 
 function nextStep() {
-  if (!isLastStep.value) {
-    currentStepIndex.value++
-    applyStep(currentStepIndex.value)
-  }
+  currentStepIndex.value++
+  applyStep(currentStepIndex.value)
 }
 
 function finishSession() {
-  // TODO: send results back / show summary
-  alert('Session complete! Results will be sent to the practitioner in a future step.')
+  alert('Session complete! Results wiring coming in the next step.')
 }
 
-// ── Free mode movement selection ──────────────────────────────────────────────
 function selectMovement(config: MovementConfig) {
   activeConfig.value = config
-  activeSide.value   = 'both'
   resetSmoothing()
+  measurement.reset()
 }
 
-// ── Recording ─────────────────────────────────────────────────────────────────
-function toggleRecording() {
-  if (isRecording.value) {
-    const frames = stopRecording()
-    console.log(`Recorded ${frames.length} frames for ${activeConfig.value.label}`)
-  } else {
-    startRecording()
+function handleReset() {
+  resetSmoothing()
+  measurement.reset()
+}
+
+const statusLabel = computed(() => {
+  if (!isRunning.value) return 'Camera off'
+  switch (measurement.state.value) {
+    case 'watching': return 'Raise your arm to begin'
+    case 'tracking': return 'Tracking — push to your maximum'
+    case 'holding':  return 'Hold still…'
+    case 'locked':   return 'Measurement locked ✓'
   }
-}
-
-// ── Symmetry ──────────────────────────────────────────────────────────────────
-const bothVisible  = computed(() => angles.value.left !== null && angles.value.right !== null)
-const symmetryDiff = computed(() =>
-  bothVisible.value
-    ? Math.abs(Math.round(angles.value.left!) - Math.round(angles.value.right!))
-    : 0
-)
-const symmetryClass = computed(() => {
-  if (symmetryDiff.value <= 5)  return 'sym-good'
-  if (symmetryDiff.value <= 15) return 'sym-warn'
-  return 'sym-bad'
 })
 </script>
 
@@ -259,7 +238,6 @@ const symmetryClass = computed(() => {
   font-family: var(--font-body); display: flex; flex-direction: column;
 }
 
-/* Header */
 .header { border-bottom: 1px solid var(--border); padding: 0 2rem; }
 .header-inner {
   max-width: 1200px; margin: 0 auto; height: 60px;
@@ -274,20 +252,20 @@ const symmetryClass = computed(() => {
 }
 .nav-link:hover, .nav-link.active { color: var(--accent); }
 
-/* Layout */
 .main {
   flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; padding: 2rem;
   display: grid; grid-template-columns: 1fr 340px; gap: 2rem; align-items: start;
 }
 
 /* Camera */
-.camera-panel  { display: flex; flex-direction: column; gap: 1rem; }
-.camera-wrap   {
+.camera-panel  { display: flex; flex-direction: column; gap: 0.75rem; }
+.camera-wrap {
   position: relative; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px;
-  overflow: hidden; aspect-ratio: 4/3; width: 100%; transition: border-color 0.3s;
+  border: 2px solid var(--border); border-radius: 12px;
+  overflow: hidden; aspect-ratio: 4/3; transition: border-color 0.3s;
 }
 .camera-wrap.running { border-color: var(--accent); }
+.camera-wrap.locked  { border-color: #4ade80; }
 .video-hidden  { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
 .canvas-output { width: 100%; height: 100%; object-fit: cover; display: block; }
 
@@ -298,63 +276,77 @@ const symmetryClass = computed(() => {
 .placeholder-icon svg { width: 56px; height: 56px; opacity: 0.4; }
 .spinner {
   width: 36px; height: 36px; border: 3px solid var(--border);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .orientation-badge {
   position: absolute; top: 12px; right: 12px;
   background: rgba(0,0,0,0.65); border: 1px solid var(--border);
-  color: var(--text-muted); font-size: 0.72rem; letter-spacing: 0.06em;
-  padding: 4px 10px; border-radius: 4px;
+  color: var(--text-muted); font-size: 0.72rem; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 4px;
 }
-.rec-badge {
-  position: absolute; top: 12px; left: 12px;
-  background: rgba(220,38,38,0.85); color: #fff;
-  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
-  padding: 4px 10px; border-radius: 4px; display: flex; align-items: center; gap: 6px;
+.locked-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0.75rem; background: rgba(0,0,0,0.45);
 }
-.rec-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: blink 1s step-start infinite; }
-@keyframes blink { 50% { opacity: 0; } }
+.locked-icon {
+  width: 64px; height: 64px; border-radius: 50%; background: #4ade80; color: #000;
+  font-size: 2rem; display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.locked-text { color: #fff; font-weight: 600; font-size: 1rem; }
 
-/* Buttons */
+/* Active arm indicator */
+.arm-indicator {
+  display: flex; align-items: center; gap: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.arm-chip {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.55rem 0.75rem; font-size: 0.82rem; font-weight: 600;
+  transition: all 0.2s;
+}
+.arm-chip.active   { background: rgba(0,229,255,0.1); color: var(--accent); }
+.arm-chip.inactive { color: var(--text-muted); opacity: 0.4; }
+.arm-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor; flex-shrink: 0;
+}
+.arm-divider { width: 1px; background: var(--border); align-self: stretch; }
+
+/* Controls */
 .controls { display: flex; gap: 0.75rem; }
 .btn {
-  padding: 0.6rem 1.4rem; border-radius: 8px; font-size: 0.875rem;
+  padding: 0.55rem 1.2rem; border-radius: 8px; font-size: 0.875rem;
   font-weight: 600; letter-spacing: 0.04em; cursor: pointer;
   border: 1px solid transparent; transition: all 0.2s;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary  { background: var(--accent); color: #000; }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-.btn-record   { background: transparent; color: var(--accent); border-color: var(--accent); }
-.btn-record:hover { background: rgba(0,229,255,0.08); }
-.btn-danger   { background: #dc2626; color: #fff; }
-.btn-danger:hover { background: #b91c1c; }
 .btn-ghost    { background: transparent; color: var(--text-muted); border-color: var(--border); }
 .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
-.btn-finish   { background: #4ade80; color: #000; width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; }
+.btn-reset-sm { background: transparent; color: var(--text-muted); border-color: var(--border); }
+.btn-reset-sm:hover { color: var(--text); border-color: var(--text-muted); }
+.btn-finish   { background: #4ade80; color: #000; font-weight: 700; border: none; cursor: pointer; }
 .btn-finish:hover { background: #86efac; }
-.error-msg { color: #f87171; font-size: 0.875rem; }
+.btn-full     { width: 100%; padding: 0.75rem; border-radius: 8px; }
+.error-msg    { color: #f87171; font-size: 0.875rem; }
 
 /* Readout panel */
 .readout-panel {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 1.5rem;
-  display: flex; flex-direction: column; gap: 1.25rem;
+  border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;
 }
 
-/* Notes banner */
 .notes-banner {
   display: flex; gap: 0.75rem; align-items: flex-start;
   background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2);
   border-radius: 8px; padding: 0.75rem 1rem;
 }
 .notes-icon { font-size: 1rem; flex-shrink: 0; }
-.notes-text { font-size: 0.82rem; color: var(--text); margin: 0; line-height: 1.5; }
+.notes-text { font-size: 0.82rem; margin: 0; line-height: 1.5; }
 
-/* Step indicator */
 .step-indicator {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.5rem 0.75rem; background: var(--bg);
@@ -363,40 +355,40 @@ const symmetryClass = computed(() => {
 .step-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
 .step-count { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; color: var(--accent); }
 
-/* Movement selector (free mode) */
 .selector-label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 0.5rem; }
-.selector-tabs  { display: flex; gap: 0.5rem; }
+.selector-tabs  { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .tab-btn {
-  flex: 1; padding: 0.45rem 0.5rem; border-radius: 6px; font-size: 0.78rem;
-  font-weight: 600; cursor: pointer; border: 1px solid var(--border);
-  background: var(--bg); color: var(--text-muted); transition: all 0.2s;
+  flex: 1; padding: 0.45rem 0.5rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); transition: all 0.2s;
 }
 .tab-btn:hover  { color: var(--text); border-color: var(--text-muted); }
 .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-/* Movement info */
-.movement-info       { display: flex; flex-direction: column; gap: 0.3rem; }
-.movement-label      { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin: 0; }
-.movement-plane      { font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin: 0; }
+.movement-info        { display: flex; flex-direction: column; gap: 0.3rem; }
+.movement-label       { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin: 0; }
+.movement-plane       { font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin: 0; }
 .movement-instruction { font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
-/* Gauges */
+.measurement-section { display: flex; flex-direction: column; gap: 0.75rem; }
 .panel-title { font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.06em; margin: 0; }
-.gauge-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-/* Symmetry */
-.symmetry-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.75rem; background: var(--bg);
-  border-radius: 8px; border: 1px solid var(--border);
+.status-pill {
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em;
+  padding: 0.35rem 0.75rem; border-radius: 20px; text-align: center;
+  border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.3s;
 }
-.sym-label { font-size: 0.8rem; color: var(--text-muted); }
-.sym-value { font-family: monospace; font-size: 1.1rem; font-weight: 700; }
-.sym-good  { color: #4ade80; }
-.sym-warn  { color: #facc15; }
-.sym-bad   { color: #f87171; }
+.status-pill.tracking { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.06); }
+.status-pill.holding  { border-color: #facc15; color: #facc15; background: rgba(250,204,21,0.08); }
+.status-pill.locked   { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.08); }
 
-/* Directed controls */
-.directed-controls .btn { width: 100%; justify-content: center; }
-.directed-controls .btn-primary { padding: 0.75rem; }
+.gauge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.locked-actions  { display: flex; flex-direction: column; gap: 1rem; }
+.locked-summary  { display: flex; gap: 0.75rem; }
+.locked-result   {
+  flex: 1; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25);
+  border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+}
+.locked-result-side  { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #4ade80; }
+.locked-result-value { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: #fff; }
 </style>

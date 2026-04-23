@@ -15,6 +15,7 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 
 
 export const AngleGauge: typeof import("../components/AngleGauge.vue")['default']
+export const MeasurementGauge: typeof import("../components/MeasurementGauge.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/nuxt-layout")['default']
 export const NuxtErrorBoundary: typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -39,6 +40,7 @@ export const Html: typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watc
 export const Body: typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/nuxt-island")['default']
 export const LazyAngleGauge: LazyComponent<typeof import("../components/AngleGauge.vue")['default']>
+export const LazyMeasurementGauge: LazyComponent<typeof import("../components/MeasurementGauge.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
 export const LazyNuxtErrorBoundary: LazyComponent<typeof import("../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>

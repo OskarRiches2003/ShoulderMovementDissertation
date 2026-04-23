@@ -30,6 +30,7 @@ export { requestIdleCallback, cancelIdleCallback } from '#app/compat/idle-callba
 export { setInterval } from '#app/compat/interval';
 export { definePageMeta } from '../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/pages/runtime/composables';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
+export { useMeasurement, MeasurementState, MeasurementResult } from '../composables/useMeasurement';
 export { usePoseLandmarker } from '../composables/usePoseLandmarker';
 export { angleBetweenThreePoints, calculateAbductionAngle, calculateFlexionAngle, calculateRotationAngle, smoothAngle, formatDegrees } from '../utils/angleCalculations';
 export { MOVEMENT_CONFIGS, MOVEMENT_CONFIG_MAP, DEFAULT_MOVEMENT } from '../utils/movementConfigs';

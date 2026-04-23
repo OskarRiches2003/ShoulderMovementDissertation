@@ -46,8 +46,13 @@ export interface MovementConfig {
   cameraView:   'frontal' | 'side'
   instruction:  string
   normalRange:  [number, number]
-  /** Which sides are meaningful for this movement (used in practitioner UI) */
+  /** Which sides the practitioner can prescribe (drives the session builder UI) */
   availableSides: Side[]
+  /** Which sides the pose composable actually calculates each frame.
+   *  For side-on movements this is ['left'] or ['right'] only.
+   *  The far shoulder is excluded because MediaPipe landmark quality is unreliable
+   *  when that shoulder is included. */
+  activeSides: ('left' | 'right')[]
   calculate: (landmarks: Landmark[], side: 'left' | 'right') => number | null
 }
 
