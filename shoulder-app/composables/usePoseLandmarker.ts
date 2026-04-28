@@ -169,14 +169,14 @@ export function usePoseLandmarker(
       const { PoseLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
  
       const filesetResolver = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
       )
  
       poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
           modelAssetPath:
             'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-          delegate: 'GPU',
+          delegate: 'CPU',
         },
         runningMode:                'VIDEO',
         numPoses:                   1,
@@ -203,6 +203,7 @@ export function usePoseLandmarker(
       isRunning.value  = true
       animationFrameId = requestAnimationFrame(renderLoop)
     } catch (e: any) {
+      console.error('Full error:', e)
       error.value = e?.message ?? 'Failed to start camera or load model'
     } finally {
       isLoading.value = false

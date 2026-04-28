@@ -23,7 +23,7 @@
 
 import { ref, computed } from 'vue'
 
-const START_THRESHOLD_DEG = 30    // minimum angle before tracking starts
+const START_THRESHOLD_DEG = 5    // minimum angle before tracking starts
 const HOLD_DURATION_MS    = 1500  // must hold at peak for this long to lock in
 const PEAK_TOLERANCE_DEG  = 4     // within this of peak = "at peak" (smoothing noise margin)
 const EXCEED_TOLERANCE_DEG = 2    // more than this above peak = new peak, reset timer

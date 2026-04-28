@@ -144,12 +144,13 @@ export function calculateRotationAngle(
   // Raw angle between projected forearm and down
   const rawAngle = angleBetweenVectors3D(projected, down)
 
+  // Obsolete as measuring negatives breaks threshold counting.
   // Determine sign: if the projected forearm points toward the body midline
   // (positive Z for left side, negative for right) it's internal rotation.
   // We use the Z component of projected as a sign indicator.
-  const sign = projected.z >= 0 ? 1 : -1
+  // const sign = projected.z >= 0 ? 1 : -1
 
-  return sign * rawAngle
+  return rawAngle
 }
 
 // ─── Smoothing ────────────────────────────────────────────────────────────────

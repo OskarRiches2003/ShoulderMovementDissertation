@@ -133,7 +133,7 @@
         </div>
 
         <!-- Post-lock actions -->
-        <div v-if="measurement.isLocked.value" class="locked-actions">
+        <div v-if="measurement.isLocked.value || isDirectedMode" class="locked-actions">
           <div class="locked-summary">
             <div v-for="r in measurement.results.value" :key="r.side" class="locked-result">
               <span class="locked-result-side">{{ r.side }}</span>
@@ -145,6 +145,9 @@
           </button>
           <button v-else-if="isDirectedMode && isLastStep" class="btn btn-finish btn-full" @click="finishSession">
             Finish Session ✓
+          </button>
+          <button v-if="isDirectedMode" class="btn btn-ghost btn-full" @click="skipStep">
+            Skip Movement
           </button>
         </div>
 
@@ -230,6 +233,14 @@ const statusLabel = computed(() => {
     case 'locked':   return 'Measurement locked ✓'
   }
 })
+
+function skipStep() {
+  if (isDirectedMode.value && !isLastStep.value) {
+    nextStep()
+  } else if (isDirectedMode.value && isLastStep.value) {
+    finishSession()
+  }
+}
 </script>
 
 <style scoped>
