@@ -16,7 +16,17 @@ import { NuxtModule, ModuleDependencyMeta } from '@nuxt/schema'
    },
   }
   interface SharedPublicRuntimeConfig {
+   firebaseApiKey: string,
 
+   firebaseAuthDomain: string,
+
+   firebaseProjectId: string,
+
+   firebaseStorageBucket: string,
+
+   firebaseMessagingSenderId: string,
+
+   firebaseAppId: string,
   }
 declare module '@nuxt/schema' {
   interface ModuleDependencies {

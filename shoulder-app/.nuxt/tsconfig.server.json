@@ -45,10 +45,10 @@
         "../node_modules/.pnpm/@nuxt+schema@3.21.2/node_modules/@nuxt/schema"
       ],
       "nuxt": [
-        "../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt"
+        "../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_5a0edc5ea34890543a85bd5478b3b4f4/node_modules/nuxt"
       ],
       "vite/client": [
-        "../node_modules/.pnpm/vite@7.3.1_jiti@2.6.1_terser@5.46.1_yaml@2.8.3/node_modules/vite/client"
+        "../node_modules/.pnpm/vite@7.3.1_@types+node@25.6_4b3bbe4003e589985b77c2b182c53602/node_modules/vite/client"
       ],
       "nitropack/types": [
         "../node_modules/.pnpm/nitropack@2.13.2/node_modules/nitropack/types"
@@ -105,10 +105,10 @@
         "./*"
       ],
       "#internal/nuxt/paths": [
-        "../node_modules/.pnpm/@nuxt+nitro-server@3.21.2_d_45ab1ecd8fd3a2bd56580ab2ed6866b0/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths"
+        "../node_modules/.pnpm/@nuxt+nitro-server@3.21.2_d_ad9809ff6a1179ef2267b540eafa0f27/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths"
       ],
       "#unhead/composables": [
-        "../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/dist/head/runtime/composables/v3"
+        "../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_5a0edc5ea34890543a85bd5478b3b4f4/node_modules/nuxt/dist/head/runtime/composables/v3"
       ]
     },
     "lib": [
@@ -121,8 +121,8 @@
   },
   "include": [
     "./types/nitro-nuxt.d.ts",
-    "../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._e004bd758379d21ac084c47943fe1706/node_modules/runtime/server",
-    "../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._e004bd758379d21ac084c47943fe1706/node_modules/dist/runtime/server",
+    "../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._1ce1e7ff578788b8c14c98ac929fd615/node_modules/runtime/server",
+    "../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._1ce1e7ff578788b8c14c98ac929fd615/node_modules/dist/runtime/server",
     "../node_modules/.pnpm/@nuxt+telemetry@2.7.0_@nuxt+kit@3.21.2_magicast@0.5.2_/node_modules/runtime/server",
     "../node_modules/.pnpm/@nuxt+telemetry@2.7.0_@nuxt+kit@3.21.2_magicast@0.5.2_/node_modules/dist/runtime/server",
     "../server/**/*",
@@ -133,8 +133,8 @@
   "exclude": [
     "../node_modules",
     "../../node_modules",
-    "../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_329de3e1187514419f615a6260154cb5/node_modules/nuxt/node_modules",
-    "../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._e004bd758379d21ac084c47943fe1706/node_modules/@nuxt/devtools/node_modules",
+    "../node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_5a0edc5ea34890543a85bd5478b3b4f4/node_modules/nuxt/node_modules",
+    "../node_modules/.pnpm/@nuxt+devtools@4.0.0-alpha._1ce1e7ff578788b8c14c98ac929fd615/node_modules/@nuxt/devtools/node_modules",
     "../node_modules/.pnpm/@nuxt+telemetry@2.7.0_@nuxt+kit@3.21.2_magicast@0.5.2_/node_modules/@nuxt/telemetry/node_modules",
     "../dist"
   ]

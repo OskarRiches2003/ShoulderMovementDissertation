@@ -31,7 +31,7 @@ import { SourceMapConsumer } from 'file://B:/uni/DISSERTATION/dev/ShoulderMoveme
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getContext } from 'file://B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/unctx@2.5.0/node_modules/unctx/dist/index.mjs';
 import { captureRawStackTrace, parseRawStackTrace } from 'file://B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/errx@0.1.0/node_modules/errx/dist/index.js';
-import _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw from 'file://B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/@nuxt+vite-builder@3.21.2_m_356e304ac257ffcf3bed2c4a75571713/node_modules/@nuxt/vite-builder/dist/fix-stacktrace.mjs';
+import _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw from 'file://B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/@nuxt+vite-builder@3.21.2_@_1a4d0e15f2ba5afa2a502c5096d8bed6/node_modules/@nuxt/vite-builder/dist/fix-stacktrace.mjs';
 import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname as dirname$1, resolve as resolve$1 } from 'file://B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/pathe@2.0.3/node_modules/pathe/dist/index.mjs';
@@ -648,7 +648,14 @@ const _inlineRuntimeConfig = {
       }
     }
   },
-  "public": {}
+  "public": {
+    "firebaseApiKey": "AIzaSyD4pajNI6nRfaQv3QelZ3d_TIB9g7dvH0s",
+    "firebaseAuthDomain": "shoulder-movement-app.firebaseapp.com",
+    "firebaseProjectId": "shoulder-movement-app",
+    "firebaseStorageBucket": "shoulder-movement-app.firebasestorage.app",
+    "firebaseMessagingSenderId": "939678905430",
+    "firebaseAppId": "1:939678905430:web:8b7b6625d0a10eb0d2f7f7"
+  }
 };
 const envOptions = {
   prefix: "NITRO_",
@@ -2021,7 +2028,7 @@ if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
 window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 `;
 
-const _ex0pBVG2CwgcoAZKym9NssyPqB1GlSOPb4looB9U1nU = (function(nitro) {
+const _yEnDOL1LcdAdy8TCh8Ye8ll5QiZY7ketIrSy2OorEc = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script}<\/script>`);
   });
@@ -2052,7 +2059,7 @@ const asyncContext = getContext("nuxt-dev", {
 	asyncContext: true,
 	AsyncLocalStorage
 });
-const _9y44VtJj2qMetCKvZzLpY4WIktz9yG8UQ1EL8XZ7vE = (nitroApp) => {
+const _je8z69g27sZly2E2ygzGKPf_yjMQtlLI1jTqT_3it4 = (nitroApp) => {
 	const handler = nitroApp.h3App.handler;
 	nitroApp.h3App.handler = (event) => {
 		return asyncContext.callAsync({
@@ -2126,8 +2133,8 @@ function onConsoleLog(callback) {
 }
 
 const plugins = [
-  _ex0pBVG2CwgcoAZKym9NssyPqB1GlSOPb4looB9U1nU,
-_9y44VtJj2qMetCKvZzLpY4WIktz9yG8UQ1EL8XZ7vE,
+  _yEnDOL1LcdAdy8TCh8Ye8ll5QiZY7ketIrSy2OorEc,
+_je8z69g27sZly2E2ygzGKPf_yjMQtlLI1jTqT_3it4,
 _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw
 ];
 
@@ -2591,13 +2598,13 @@ async function getIslandContext(event) {
 	};
 }
 
-const _lazy_15_Awy = () => Promise.resolve().then(function () { return renderer; });
+const _lazy_6DPppU = () => Promise.resolve().then(function () { return renderer; });
 
 const handlers = [
   { route: '', handler: _7TL2E8, lazy: false, middleware: true, method: undefined },
-  { route: '/__nuxt_error', handler: _lazy_15_Awy, lazy: true, middleware: false, method: undefined },
+  { route: '/__nuxt_error', handler: _lazy_6DPppU, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: handler$1, lazy: false, middleware: false, method: undefined },
-  { route: '/**', handler: _lazy_15_Awy, lazy: true, middleware: false, method: undefined }
+  { route: '/**', handler: _lazy_6DPppU, lazy: true, middleware: false, method: undefined }
 ];
 
 function createNitroApp() {

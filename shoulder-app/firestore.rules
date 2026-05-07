@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isPractitioner() {
+      return isSignedIn() && role() == 'practitioner';
+    }
+
+    function isPatient() {
+      return isSignedIn() && role() == 'patient';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && role() == 'admin';
+    }
+
+    // ── users/{uid} ──────────────────────────────────────────────────────────
+    // Users can read their own profile. Only admin or Cloud Functions write here.
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if isAdmin();
+    }
+
+    // ── patients/{patientId} ─────────────────────────────────────────────────
+    // Practitioners can read/write only patients they created.
+    // Patients can read their own record.
+
+    match /patients/{patientId} {
+      allow read: if isAdmin()
+        || (isPractitioner() && resource.data.createdBy == request.auth.uid)
+        || (isPatient() && request.auth.uid == patientId);
+      allow write: if isAdmin(); // writes go through Cloud Function only
+    }
+
+    // ── sessions/{sessionId} ─────────────────────────────────────────────────
+    // Practitioners can create and read sessions for their patients.
+    // Patients can read and update (write results to) their own sessions.
+
+    match /sessions/{sessionId} {
+      allow read: if isAdmin()
+        || (isPractitioner() && resource.data.practitionerId == request.auth.uid)
+        || (isPatient() && resource.data.patientId == request.auth.uid);
+
+      allow create: if isPractitioner() || isAdmin();
+
+      // Patients may only update the results and status fields
+      allow update: if isPatient()
+        && resource.data.patientId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['results', 'status', 'completedAt']);
+    }
+  }
+}
