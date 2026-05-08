@@ -31,7 +31,7 @@ export function useAuth() {
       } else {
         profile.value = null
       }
-
+      console.log('Auth state resolved, isLoading → false, role:', profile.value?.role)
       isLoading.value = false
     })
   }
@@ -46,18 +46,25 @@ export function useAuth() {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
-  async function signIn(email: string, password: string): Promise<void> {
+    async function signIn(email: string, password: string): Promise<void> {
     isLoading.value = true
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      // onAuthStateChanged will populate profile; wait for it
-      await until(isLoading).toBe(false)
-      redirectByRole()
+        await signInWithEmailAndPassword(auth, email, password)
+        // Wait for onAuthStateChanged to populate profile
+        await new Promise<void>((resolve) => {
+        const stop = watch(isLoading, (val) => {
+            if (!val) {
+            stop()
+            resolve()
+            }
+        })
+        })
+        redirectByRole()
     } catch (err) {
-      isLoading.value = false
-      throw err
+        isLoading.value = false
+        throw err
     }
-  }
+    }
 
   async function signOut(): Promise<void> {
     await firebaseSignOut(auth)

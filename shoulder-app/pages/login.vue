@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <h1>ShoulderTrack</h1>
+        <h1>PlaceholderName</h1>
         <p>Sign in to continue</p>
       </div>
 
@@ -57,11 +57,14 @@ async function handleSignIn() {
   errorMessage.value = ''
   loading.value = true
   try {
+    console.log('Attempting sign in with:', email.value)
     await signIn(email.value, password.value)
-    // useAuth.signIn handles redirect based on role
     const redirect = route.query.redirect as string
     if (redirect) await navigateTo(redirect)
   } catch (err: any) {
+    console.error('Full error object:', err)
+    console.error('Error code:', err.code)
+    console.error('Error message:', err.message)
     errorMessage.value = friendlyError(err.code)
   } finally {
     loading.value = false
