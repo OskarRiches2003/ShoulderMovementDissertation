@@ -5,7 +5,7 @@ import {
   onSnapshot,
   orderBy,
 } from 'firebase/firestore'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import { httpsCallable, getFunctions } from 'firebase/functions'
 import { db } from '~/firebase/firebase'
 import type { Patient } from '~/types/auth'
 
@@ -15,7 +15,6 @@ export function usePatients() {
   const isLoading = ref(true)
   const error = ref<string | null>(null)
 
-  // Real-time listener scoped to this practitioner's patients
   let unsubscribe: (() => void) | null = null
 
   function startListening() {
@@ -45,11 +44,6 @@ export function usePatients() {
   onMounted(startListening)
   onUnmounted(stopListening)
 
-  // ── Create patient via Cloud Function ────────────────────────────────────────
-
-  const functions = getFunctions()
-  const createPatientFn = httpsCallable(functions, 'createPatient')
-
   async function createPatient(params: {
     displayName: string
     email: string
@@ -57,6 +51,8 @@ export function usePatients() {
     notes?: string
     dateOfBirth?: string
   }): Promise<{ uid: string; displayName: string }> {
+    const functions = getFunctions()
+    const createPatientFn = httpsCallable(functions, 'createPatient')
     const result = await createPatientFn(params)
     return result.data as { uid: string; displayName: string }
   }

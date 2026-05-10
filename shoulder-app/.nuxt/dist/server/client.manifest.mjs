@@ -1,1 +1,18 @@
-export default ({"@vite/client":{prefetch:!0,isEntry:!0,file:"@vite/client",css:[],module:!0,resourceType:"script",dynamicImports:void 0},"B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_5a0edc5ea34890543a85bd5478b3b4f4/node_modules/nuxt/dist/app/entry.js":{resourceType:"script",module:!0,prefetch:!0,preload:!0,isEntry:!0,file:"B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/nuxt@3.21.2_@parcel+watcher_5a0edc5ea34890543a85bd5478b3b4f4/node_modules/nuxt/dist/app/entry.js",dynamicImports:void 0}})
+export default {
+  "@vite/client": {
+    "prefetch": true,
+    "isEntry": true,
+    "file": "@vite/client",
+    "css": [],
+    "module": true,
+    "resourceType": "script"
+  },
+  "C:/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/nuxt@3.15.4_@parcel+watcher_4ddc92af450e02907b87960190efdc5d/node_modules/nuxt/dist/app/entry.js": {
+    "resourceType": "script",
+    "module": true,
+    "prefetch": true,
+    "preload": true,
+    "isEntry": true,
+    "file": "C:/dev/ShoulderMovementDissertation/shoulder-app/node_modules/.pnpm/nuxt@3.15.4_@parcel+watcher_4ddc92af450e02907b87960190efdc5d/node_modules/nuxt/dist/app/entry.js"
+  }
+}
