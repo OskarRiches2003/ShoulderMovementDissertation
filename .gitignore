@@ -5,7 +5,8 @@
 .cache
 
 # Dependencies
-node_modules
+shoulder-app/node_modules/
+node_modules/
 
 # Environment files
 .env
@@ -27,4 +28,3 @@ npm-debug.log*
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
