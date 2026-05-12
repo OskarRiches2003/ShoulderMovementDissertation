@@ -1,12 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-
-  // Camera access requires client-side only
-  ssr: false,
-
+  ssr: false, // Camera access requires client-side only
   router: { middleware: ['auth'] },
-
+  
   vite: {
     optimizeDeps: {
       exclude: ['@mediapipe/tasks-vision'],
@@ -31,7 +28,5 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Multi-dimensional shoulder motion analysis using MediaPipe Pose' }
       ]
     }
-  },
-
-  compatibilityDate: '2026-05-10'
+  }
 })

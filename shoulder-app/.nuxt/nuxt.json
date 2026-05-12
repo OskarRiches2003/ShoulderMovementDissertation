@@ -1,9 +1,9 @@
 {
-  "_hash": "QecMZqj73fBnEAVx9xnRVzFjemOa0WPx3c3_QxlxpsM",
+  "_hash": "zR9tC63NfRfCFPjag_GBypjMx4s6JrIqii_lBRaAdUY",
   "project": {
-    "rootDir": "C:/dev/ShoulderMovementDissertation/shoulder-app"
+    "rootDir": "B:/uni/DISSERTATION/dev/ShoulderMovementDissertation/shoulder-app"
   },
   "versions": {
-    "nuxt": "3.15.4"
+    "nuxt": "3.21.2"
   }
 }

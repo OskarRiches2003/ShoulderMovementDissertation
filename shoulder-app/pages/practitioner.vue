@@ -21,15 +21,12 @@
             <button class="btn-new" @click="showNewPatient = true">+ New</button>
           </div>
 
-          <!-- Loading -->
           <div v-if="isLoadingPatients" class="state-msg">Loading patients…</div>
 
-          <!-- Empty -->
           <div v-else-if="patients.length === 0" class="state-msg state-empty">
             No patients yet. Create one to get started.
           </div>
 
-          <!-- Patient list -->
           <ul v-else class="patient-list">
             <li
               v-for="p in patients"
@@ -48,7 +45,7 @@
           </ul>
         </aside>
 
-        <!-- ── Middle column: Session builder ───────────────────────────── -->
+        <!-- ── Right column: Session builder ────────────────────────────── -->
         <section class="panel panel-builder">
           <div class="panel-header">
             <h2 class="panel-title">Session Builder</h2>
@@ -237,7 +234,6 @@ async function handleCreatePatient() {
     createError.value = 'Password must be at least 6 characters.'
     return
   }
-
   isCreating.value = true
   try {
     await createPatient(newPatient.value)
@@ -250,7 +246,7 @@ async function handleCreatePatient() {
   }
 }
 
-// ── Movement builder  ───────────────────────────────────────────────
+// ── Movement builder ───────────────────────────────────────────────────────────
 interface PractitionerRow {
   id: string
   label: string
@@ -259,9 +255,9 @@ interface PractitionerRow {
 }
 
 const PRACTITIONER_ROWS: PractitionerRow[] = [
-  { id: 'abduction', label: 'Abduction', plane: 'Frontal (coronal) plane',            sides: ['left', 'right', 'both'] },
-  { id: 'flexion',   label: 'Flexion',   plane: 'Sagittal plane',                     sides: ['left', 'right', 'both'] },
-  { id: 'rotation',  label: 'Rotation',  plane: 'Transverse plane (approximated)',     sides: ['left', 'right', 'both'] },
+  { id: 'abduction', label: 'Abduction', plane: 'Frontal (coronal) plane',        sides: ['left', 'right', 'both'] },
+  { id: 'flexion',   label: 'Flexion',   plane: 'Sagittal plane',                 sides: ['left', 'right', 'both'] },
+  { id: 'rotation',  label: 'Rotation',  plane: 'Transverse plane (approximated)', sides: ['left', 'right', 'both'] },
 ]
 
 const selections = ref<Record<string, Side | null>>({ abduction: null, flexion: null, rotation: null })
@@ -306,7 +302,6 @@ function launchSession() {
     movements: prescribedSteps.value.map(s => ({ movementType: s.movementType, side: s.side })),
     notes: notes.value,
   })
-  // TODO: replace URL params with Firestore session doc in next milestone
   window.open(`${window.location.origin}/capture?${params.toString()}&patientId=${selectedPatient.value.id}`, '_blank')
 }
 </script>
@@ -317,7 +312,6 @@ function launchSession() {
   font-family: var(--font-body); display: flex; flex-direction: column;
 }
 
-/* Header */
 .header { border-bottom: 1px solid var(--border); padding: 0 2rem; }
 .header-inner {
   max-width: 1300px; margin: 0 auto; height: 60px;
@@ -326,6 +320,7 @@ function launchSession() {
 .logo { font-family: var(--font-display); font-size: 1.2rem; letter-spacing: 0.12em; font-weight: 700; }
 .logo-accent { color: var(--accent); }
 .header-right { display: flex; align-items: center; gap: 1rem; }
+.practitioner-name { font-size: 0.875rem; color: var(--text); font-weight: 500; }
 .role-badge {
   font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
   background: rgba(0,229,255,0.1); color: var(--accent);
@@ -337,28 +332,17 @@ function launchSession() {
   cursor: pointer; transition: all 0.15s;
 }
 .btn-signout:hover { color: var(--text); border-color: var(--text-muted); }
-.practitioner-name {
-  font-size: 0.875rem;
-  color: var(--text);
-  font-weight: 500;
-}
 
-/* Layout */
 .main { flex: 1; max-width: 1300px; margin: 0 auto; width: 100%; padding: 2rem; }
 .workspace { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; align-items: start; }
 
-/* Panels */
-.panel {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; overflow: hidden;
-}
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .panel-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
 }
 .panel-title { font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.05em; margin: 0; }
 
-/* Patient panel */
 .btn-new {
   font-size: 0.78rem; font-weight: 600; padding: 4px 10px;
   background: var(--accent); color: #000; border: none;
@@ -375,9 +359,8 @@ function launchSession() {
   padding: 0.65rem 0.75rem; border-radius: 8px; cursor: pointer;
   transition: background 0.15s; border: 1px solid transparent;
 }
-.patient-item:hover   { background: rgba(255,255,255,0.04); }
-.patient-item.active  { background: rgba(0,229,255,0.07); border-color: rgba(0,229,255,0.2); }
-
+.patient-item:hover  { background: rgba(255,255,255,0.04); }
+.patient-item.active { background: rgba(0,229,255,0.07); border-color: rgba(0,229,255,0.2); }
 .patient-avatar {
   width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
   background: rgba(0,229,255,0.15); color: var(--accent);
@@ -388,17 +371,15 @@ function launchSession() {
 .patient-name  { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .patient-email { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .patient-check { color: var(--accent); font-size: 0.85rem; flex-shrink: 0; }
+
 .selected-patient-badge {
   font-size: 0.75rem; padding: 2px 10px; border-radius: 4px;
   background: rgba(0,229,255,0.1); color: var(--accent);
   border: 1px solid rgba(0,229,255,0.25);
 }
 
-/* Builder panel */
-.panel-builder { display: flex; flex-direction: column; gap: 0; }
-.panel-builder .panel-header { margin-bottom: 0; }
+.panel-builder { display: flex; flex-direction: column; }
 .card { padding: 1.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; }
-.card:first-of-type { border-top: none; }
 .card-title { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.05em; margin: 0; }
 .card-sub   { font-size: 0.82rem; color: var(--text-muted); margin: -0.5rem 0 0; }
 
@@ -463,7 +444,6 @@ function launchSession() {
 .btn-launch:disabled { opacity: 0.4; cursor: not-allowed; }
 .launch-hint { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 0; }
 
-/* Modal */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center; z-index: 100;

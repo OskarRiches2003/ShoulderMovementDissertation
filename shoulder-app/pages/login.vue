@@ -59,8 +59,12 @@ async function handleSignIn() {
   try {
     console.log('Attempting sign in with:', email.value)
     await signIn(email.value, password.value)
+    const redirect = route.query.redirect as string
+    if (redirect) await navigateTo(redirect)
   } catch (err: any) {
     console.error('Full error object:', err)
+    console.error('Error code:', err.code)
+    console.error('Error message:', err.message)
     errorMessage.value = friendlyError(err.code)
   } finally {
     loading.value = false

@@ -1,6 +1,13 @@
 import type { ComputedRef, MaybeRef } from 'vue'
-export type LayoutKey = string
-declare module "../../node_modules/.pnpm/nuxt@3.15.4_@parcel+watcher_4ddc92af450e02907b87960190efdc5d/node_modules/nuxt/dist/pages/runtime/composables" {
+
+type ComponentProps<T> = T extends new(...args: any) => { $props: infer P } ? NonNullable<P>
+  : T extends (props: infer P, ...args: any) => any ? P
+  : {}
+
+declare module 'nuxt/app' {
+  interface NuxtLayouts {
+}
+  export type LayoutKey = keyof NuxtLayouts extends never ? string : keyof NuxtLayouts
   interface PageMeta {
     layout?: MaybeRef<LayoutKey | false> | ComputedRef<LayoutKey | false>
   }

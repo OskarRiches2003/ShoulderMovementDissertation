@@ -11,7 +11,6 @@ import type { UserProfile, UserRole } from '~/types/auth'
 const user = ref<User | null>(null)
 const profile = ref<UserProfile | null>(null)
 const isLoading = ref(true)
-// Tracks whether the user explicitly just signed in (not a cached session restore)
 const justSignedIn = ref(false)
 
 let listenerRegistered = false
@@ -23,11 +22,11 @@ export function useAuth() {
   if (!listenerRegistered) {
     listenerRegistered = true
 
-    onAuthStateChanged(auth, async (firebaseUser) => {
+    onAuthStateChanged(auth(), async (firebaseUser) => {
       user.value = firebaseUser
 
       if (firebaseUser) {
-        const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
+        const snap = await getDoc(doc(db(), 'users', firebaseUser.uid))
         if (snap.exists()) {
           profile.value = { uid: firebaseUser.uid, ...snap.data() } as UserProfile
         }
@@ -37,7 +36,8 @@ export function useAuth() {
 
       isLoading.value = false
 
-      // Only redirect if the user explicitly triggered sign in — not on session restore
+      console.log('justSignedIn:', justSignedIn.value, '| role:', profile.value?.role, '| path:', route.path)
+
       if (firebaseUser && profile.value?.role && justSignedIn.value) {
         justSignedIn.value = false
         redirectByRole()
@@ -55,7 +55,7 @@ export function useAuth() {
     isLoading.value = true
     justSignedIn.value = true
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      await signInWithEmailAndPassword(auth(), email, password)
     } catch (err) {
       isLoading.value = false
       justSignedIn.value = false
@@ -64,7 +64,7 @@ export function useAuth() {
   }
 
   async function signOut(): Promise<void> {
-    await firebaseSignOut(auth)
+    await firebaseSignOut(auth())
     router.push('/login')
   }
 

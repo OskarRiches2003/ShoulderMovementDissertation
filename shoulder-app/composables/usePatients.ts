@@ -5,8 +5,7 @@ import {
   onSnapshot,
   orderBy,
 } from 'firebase/firestore'
-import { httpsCallable, getFunctions } from 'firebase/functions'
-import { db } from '~/firebase/firebase'
+import { auth, db } from '~/firebase/firebase'
 import type { Patient } from '~/types/auth'
 
 export function usePatients() {
@@ -20,7 +19,7 @@ export function usePatients() {
   function startListening() {
     if (!user.value) return
     const q = query(
-      collection(db, 'patients'),
+      collection(db(), 'patients'),
       where('createdBy', '==', user.value.uid),
       orderBy('createdAt', 'desc')
     )
@@ -51,10 +50,14 @@ export function usePatients() {
     notes?: string
     dateOfBirth?: string
   }): Promise<{ uid: string; displayName: string }> {
-    const functions = getFunctions()
-    const createPatientFn = httpsCallable(functions, 'createPatient')
-    const result = await createPatientFn(params)
-    return result.data as { uid: string; displayName: string }
+    const current = auth().currentUser
+    if (!current) throw new Error('Not signed in.')
+    const token = await current.getIdToken()
+    return await $fetch<{ uid: string; displayName: string }>('/api/createPatient', {
+      method: 'POST',
+      body: params,
+      headers: { Authorization: `Bearer ${token}` },
+    })
   }
 
   return {
