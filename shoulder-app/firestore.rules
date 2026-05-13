@@ -32,15 +32,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ── patients/{patientId} ─────────────────────────────────────────────────
-    // Practitioners can read/write only patients they created.
-    // Patients can read their own record.
-
     match /patients/{patientId} {
-      allow read: if isAdmin()
-        || (isPractitioner() && resource.data.createdBy == request.auth.uid)
-        || (isPatient() && request.auth.uid == patientId);
-      allow write: if isAdmin(); // writes go through Cloud Function only
+      allow read: if isPractitioner() || isAdmin() || (isPatient() && request.auth.uid == patientId);
+      allow write: if isAdmin();
     }
 
     // ── sessions/{sessionId} ─────────────────────────────────────────────────

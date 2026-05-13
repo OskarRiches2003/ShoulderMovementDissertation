@@ -57,14 +57,18 @@ async function handleSignIn() {
   errorMessage.value = ''
   loading.value = true
   try {
-    console.log('Attempting sign in with:', email.value)
     await signIn(email.value, password.value)
-    const redirect = route.query.redirect as string
-    if (redirect) await navigateTo(redirect)
+    // Poll until profile is loaded, then redirect
+    const { role } = useAuth()
+    let attempts = 0
+    while (!role.value && attempts < 50) {
+      await new Promise(r => setTimeout(r, 100))
+      attempts++
+    }
+    if (role.value === 'practitioner') await navigateTo('/practitioner')
+    else if (role.value === 'patient') await navigateTo('/capture')
+    else if (role.value === 'admin') await navigateTo('/admin')
   } catch (err: any) {
-    console.error('Full error object:', err)
-    console.error('Error code:', err.code)
-    console.error('Error message:', err.message)
     errorMessage.value = friendlyError(err.code)
   } finally {
     loading.value = false

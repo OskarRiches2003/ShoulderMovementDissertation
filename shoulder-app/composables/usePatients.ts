@@ -1,7 +1,6 @@
 import {
   collection,
   query,
-  where,
   onSnapshot,
   orderBy,
 } from 'firebase/firestore'
@@ -13,23 +12,29 @@ export function usePatients() {
   const patients = ref<Patient[]>([])
   const isLoading = ref(true)
   const error = ref<string | null>(null)
+  const listening = ref(false)
 
   let unsubscribe: (() => void) | null = null
 
   function startListening() {
-    if (!user.value) return
+    if (!user.value || listening.value) return
+    listening.value = true
+
+    console.log('Starting Firestore listener for uid:', user.value.uid)
+
     const q = query(
       collection(db(), 'patients'),
-      where('createdBy', '==', user.value.uid),
       orderBy('createdAt', 'desc')
     )
     unsubscribe = onSnapshot(
       q,
       (snap) => {
+        console.log('Firestore snapshot received, docs:', snap.docs.length)
         patients.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Patient))
         isLoading.value = false
       },
       (err) => {
+        console.error('Firestore listener error:', err)
         error.value = err.message
         isLoading.value = false
       }
@@ -38,9 +43,14 @@ export function usePatients() {
 
   function stopListening() {
     unsubscribe?.()
+    listening.value = false
   }
 
-  onMounted(startListening)
+  // Watch for user to become available, then start the Firestore listener
+  watch(() => user.value, (newUser) => {
+    if (newUser) startListening()
+  }, { immediate: true })
+
   onUnmounted(stopListening)
 
   async function createPatient(params: {

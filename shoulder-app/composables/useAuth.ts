@@ -11,13 +11,12 @@ import type { UserProfile, UserRole } from '~/types/auth'
 const user = ref<User | null>(null)
 const profile = ref<UserProfile | null>(null)
 const isLoading = ref(true)
-const justSignedIn = ref(false)
+const isSigningIn = ref(false)
 
 let listenerRegistered = false
 
 export function useAuth() {
   const router = useRouter()
-  const route = useRoute()
 
   if (!listenerRegistered) {
     listenerRegistered = true
@@ -36,10 +35,9 @@ export function useAuth() {
 
       isLoading.value = false
 
-      console.log('justSignedIn:', justSignedIn.value, '| role:', profile.value?.role, '| path:', route.path)
-
-      if (firebaseUser && profile.value?.role && justSignedIn.value) {
-        justSignedIn.value = false
+      // Only redirect if we are in the middle of an explicit sign-in attempt
+      if (isSigningIn.value && firebaseUser && profile.value?.role) {
+        isSigningIn.value = false
         redirectByRole()
       }
     })
@@ -52,13 +50,12 @@ export function useAuth() {
   const isAdmin = computed(() => role.value === 'admin')
 
   async function signIn(email: string, password: string): Promise<void> {
-    isLoading.value = true
-    justSignedIn.value = true
     try {
+      // Set flag BEFORE the await so it is true when onAuthStateChanged fires
+      isSigningIn.value = true
       await signInWithEmailAndPassword(auth(), email, password)
     } catch (err) {
-      isLoading.value = false
-      justSignedIn.value = false
+      isSigningIn.value = false
       throw err
     }
   }
