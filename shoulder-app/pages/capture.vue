@@ -2,11 +2,11 @@
   <div class="capture-page">
     <header class="header">
       <div class="header-inner">
-        <span class="logo">PLACEHOLDER<span class="logo-accent">LOGO</span></span>
+        <span class="logo">SHOULDER<span class="logo-accent">TRACK</span></span>
         <nav class="nav">
           <NuxtLink to="/capture" class="nav-link active">Capture</NuxtLink>
-          <NuxtLink to="/dashboard" class="nav-link">Dashboard</NuxtLink>
-          <NuxtLink to="/practitioner" class="nav-link">Practitioner</NuxtLink>
+          <NuxtLink v-if="isPractitioner" to="/practitioner" class="nav-link">Practitioner</NuxtLink>
+          <NuxtLink v-if="isPatient" to="/patient" class="nav-link">My Page</NuxtLink>
         </nav>
       </div>
     </header>
@@ -29,19 +29,16 @@
             <div class="spinner" /><p>Loading model…</p>
           </div>
 
-          <!-- Camera orientation badge -->
           <div v-if="isRunning" class="orientation-badge">
             {{ activeConfig.cameraView === 'frontal' ? 'Face camera' : 'Side-on to camera' }}
           </div>
 
-          <!-- Locked overlay -->
           <div v-if="measurement.isLocked.value" class="locked-overlay">
             <div class="locked-icon">✓</div>
             <p class="locked-text">Measurement captured</p>
           </div>
         </div>
 
-        <!-- Active arm indicator — shown whenever camera is running -->
         <div v-if="isRunning" class="arm-indicator">
           <div class="arm-chip" :class="{ active: showLeft, inactive: !showLeft }">
             <span class="arm-dot" />
@@ -64,24 +61,43 @@
           </template>
         </div>
         <p v-if="error" class="error-msg">⚠ {{ error }}</p>
+        <p v-if="saveError" class="error-msg">⚠ {{ saveError }}</p>
       </section>
 
-      <!-- Readout panel -->
       <aside class="readout-panel">
 
-        <!-- Patient notes (directed mode) -->
-        <div v-if="sessionConfig?.notes" class="notes-banner">
+        <div v-if="sessionNotes" class="notes-banner">
           <span class="notes-icon">📋</span>
-          <p class="notes-text">{{ sessionConfig.notes }}</p>
+          <p class="notes-text">{{ sessionNotes }}</p>
         </div>
 
-        <!-- Step indicator (directed mode) -->
-        <div v-if="isDirectedMode" class="step-indicator">
-          <span class="step-label">Step</span>
-          <span class="step-count">{{ currentStepIndex + 1 }} / {{ directedSteps.length }}</span>
+        <!-- ── Directed-mode progress checklist ─────────────────────────── -->
+        <div v-if="isDirectedMode" class="progress-section">
+          <div class="progress-header">
+            <span class="progress-label">Progress</span>
+            <span class="progress-count">{{ completedCount }} / {{ directedSteps.length }}</span>
+          </div>
+          <ul class="progress-list">
+            <li
+              v-for="(step, i) in directedSteps"
+              :key="i"
+              class="progress-item"
+              :class="{
+                done: stepStatuses[i] === 'done',
+                active: stepStatuses[i] === 'active',
+                pending: stepStatuses[i] === 'pending',
+              }"
+            >
+              <span class="progress-check">
+                <template v-if="stepStatuses[i] === 'done'">✓</template>
+                <template v-else-if="stepStatuses[i] === 'active'">●</template>
+                <template v-else>{{ i + 1 }}</template>
+              </span>
+              <span class="progress-text">{{ step.config.shortLabel }} ({{ sideLabel(step.movement.side) }})</span>
+            </li>
+          </ul>
         </div>
 
-        <!-- Movement tabs (free mode only) -->
         <div v-if="!isDirectedMode" class="movement-selector">
           <p class="selector-label">Movement</p>
           <div class="selector-tabs">
@@ -97,14 +113,12 @@
           </div>
         </div>
 
-        <!-- Movement info -->
         <div class="movement-info">
           <p class="movement-label">{{ activeConfig.label }}</p>
           <p class="movement-plane">{{ activeConfig.plane }}</p>
           <p class="movement-instruction">{{ activeConfig.instruction }}</p>
         </div>
 
-        <!-- Measurement -->
         <div class="measurement-section">
           <h2 class="panel-title">Measurement</h2>
 
@@ -132,21 +146,28 @@
           </div>
         </div>
 
-        <!-- Post-lock actions -->
-        <div v-if="measurement.isLocked.value || isDirectedMode" class="locked-actions">
-          <div class="locked-summary">
+        <!-- ── Confirm or skip ────────────────────────────────────────────── -->
+        <div v-if="isDirectedMode" class="action-area">
+          <div v-if="measurement.isLocked.value" class="locked-summary">
             <div v-for="r in measurement.results.value" :key="r.side" class="locked-result">
               <span class="locked-result-side">{{ r.side }}</span>
               <span class="locked-result-value">{{ Math.round(r.degrees) }}°</span>
             </div>
           </div>
-          <button v-if="isDirectedMode && !isLastStep" class="btn btn-primary btn-full" @click="nextStep">
-            Next Movement →
+
+          <!-- Confirm — primary action, only enabled once a measurement is locked -->
+          <button
+            class="btn btn-primary btn-full"
+            :disabled="!measurement.isLocked.value || isSaving"
+            @click="confirmMovement"
+          >
+            <span v-if="isSaving">Saving…</span>
+            <span v-else-if="!measurement.isLocked.value">Lock a measurement first</span>
+            <span v-else-if="isLastStep">Confirm &amp; Finish Session ✓</span>
+            <span v-else>Confirm Movement →</span>
           </button>
-          <button v-else-if="isDirectedMode && isLastStep" class="btn btn-finish btn-full" @click="finishSession">
-            Finish Session ✓
-          </button>
-          <button v-if="isDirectedMode" class="btn btn-ghost btn-full" @click="skipStep">
+
+          <button class="btn btn-ghost btn-full" :disabled="isSaving" @click="skipStep">
             Skip Movement
           </button>
         </div>
@@ -158,24 +179,40 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '~/firebase/firebase'
 import { usePoseLandmarker }        from '~/composables/usePoseLandmarker'
 import { useMeasurement }           from '~/composables/useMeasurement'
 import { MOVEMENT_CONFIGS, MOVEMENT_CONFIG_MAP, DEFAULT_MOVEMENT } from '~/utils/movementConfigs'
-import { decodeSessionConfig }      from '~/types/pose'
-import type { MovementConfig, SessionConfig } from '~/types/pose'
+import type { MovementConfig } from '~/types/pose'
+import type { Session, SessionMovement } from '~/types/auth'
+
+definePageMeta({ middleware: ['auth'] })
+
+const route  = useRoute()
+const router = useRouter()
+const { isPractitioner, isPatient } = useAuth()
+const { startSession, appendMovementResult, finishSession } = useSessions()
 
 const videoEl  = ref<HTMLVideoElement | null>(null)
 const canvasEl = ref<HTMLCanvasElement | null>(null)
 
-const sessionConfig    = ref<SessionConfig | null>(null)
-const directedSteps    = ref<{ config: MovementConfig; side: string }[]>([])
+// ── Session state ──────────────────────────────────────────────────────────────
+const sessionId        = ref<string | null>(null)
+const sessionNotes     = ref<string>('')
+const directedSteps    = ref<{ config: MovementConfig; movement: SessionMovement }[]>([])
 const currentStepIndex = ref(0)
+const stepStatuses     = ref<('done' | 'active' | 'pending')[]>([])
+
 const isDirectedMode   = computed(() => directedSteps.value.length > 0)
 const isLastStep       = computed(() => currentStepIndex.value === directedSteps.value.length - 1)
+const completedCount   = computed(() => stepStatuses.value.filter(s => s === 'done').length)
+
+const isSaving  = ref(false)
+const saveError = ref('')
 
 const activeConfig = ref<MovementConfig>(DEFAULT_MOVEMENT)
 
-// Which sides to show gauges for — driven by activeSides on the config
 const showLeft  = computed(() => activeConfig.value.activeSides.includes('left'))
 const showRight = computed(() => activeConfig.value.activeSides.includes('right'))
 
@@ -184,15 +221,61 @@ const measurement = useMeasurement()
 const { isLoading, isRunning, angles, error, start, stop, resetSmoothing } =
   usePoseLandmarker(videoEl, canvasEl, activeConfig, measurement)
 
-onMounted(() => {
-  const decoded = decodeSessionConfig(new URLSearchParams(window.location.search))
-  if (decoded?.movements.length) {
-    sessionConfig.value = decoded
-    directedSteps.value = decoded.movements.flatMap(pm => {
-      const config = MOVEMENT_CONFIG_MAP.get(pm.movementType)
-      return config ? [{ config, side: pm.side }] : []
+// ── Load session from Firestore on mount ───────────────────────────────────────
+onMounted(async () => {
+  const id = route.query.sessionId as string | undefined
+  console.log('Capture mounted, sessionId from URL:', id)
+  
+    // No sessionId — patients shouldn't be here at all
+  if (!id) {
+    if (isPatient.value) {
+      router.push('/patient')
+      return
+    }
+    // Practitioners can stay in free mode for testing
+    return
+  }
+
+  sessionId.value = id
+
+  try {
+    console.log('Fetching session doc:', id)
+    const snap = await getDoc(doc(db(), 'sessions', id))
+    console.log('Session doc exists:', snap.exists())
+    
+    if (!snap.exists()) {
+      saveError.value = 'Session not found.'
+      return
+    }
+    
+    const session = { id: snap.id, ...snap.data() } as Session
+    console.log('Loaded session:', session)
+    console.log('Session movements:', session.movements)
+    
+    sessionNotes.value = session.notes ?? ''
+    directedSteps.value = session.movements.flatMap((m) => {
+      const config = MOVEMENT_CONFIG_MAP.get(m.movementType)
+      console.log('Movement type:', m.movementType, '→ config found:', !!config)
+      return config ? [{ config, movement: m }] : []
     })
+    
+    console.log('Directed steps count:', directedSteps.value.length)
+
+    if (directedSteps.value.length === 0) {
+      saveError.value = 'Session has no valid movements.'
+      return
+    }
+
+    stepStatuses.value = directedSteps.value.map((_, i) => i === 0 ? 'active' : 'pending')
+
+    if (session.status === 'pending') {
+      await startSession(id)
+    }
+
     applyStep(0)
+  } catch (err: any) {
+    console.error('Failed to load session:', err)
+    saveError.value = err.message ?? 'Failed to load session.'
   }
 })
 
@@ -204,13 +287,84 @@ function applyStep(index: number) {
   measurement.reset()
 }
 
-function nextStep() {
-  currentStepIndex.value++
-  applyStep(currentStepIndex.value)
+function sideLabel(side: string): string {
+  return side === 'both' ? 'Both' : side === 'left' ? 'Left' : 'Right'
 }
 
-function finishSession() {
-  alert('Session complete! Results wiring coming in the next step.')
+// ── Save current step's results to Firestore ───────────────────────────────────
+async function saveCurrentStepResults(): Promise<void> {
+  if (!sessionId.value) return
+  const step = directedSteps.value[currentStepIndex.value]
+  if (!step) return
+
+  const results = measurement.results.value
+  if (results.length === 0) return
+
+  for (const r of results) {
+    await appendMovementResult(sessionId.value, {
+      movementType: step.movement.movementType,
+      side: r.side as any,
+      peakAngle: r.degrees,
+      readings: [],
+    })
+  }
+}
+
+// ── Confirm current movement ───────────────────────────────────────────────────
+async function confirmMovement() {
+  isSaving.value = true
+  saveError.value = ''
+  try {
+    await saveCurrentStepResults()
+
+    // Mark current step done
+    stepStatuses.value[currentStepIndex.value] = 'done'
+
+    if (isLastStep.value) {
+      // Finish session and redirect
+      if (sessionId.value) {
+        await finishSession(sessionId.value)
+      }
+      stop()
+      router.push('/patient')
+      return
+    }
+
+    // Advance to next step
+    currentStepIndex.value++
+    stepStatuses.value[currentStepIndex.value] = 'active'
+    applyStep(currentStepIndex.value)
+  } catch (err: any) {
+    saveError.value = err.message ?? 'Failed to save measurement.'
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// ── Skip movement — same flow as confirm but no save ───────────────────────────
+async function skipStep() {
+  isSaving.value = true
+  saveError.value = ''
+  try {
+    stepStatuses.value[currentStepIndex.value] = 'done'
+
+    if (isLastStep.value) {
+      if (sessionId.value) {
+        await finishSession(sessionId.value)
+      }
+      stop()
+      router.push('/patient')
+      return
+    }
+
+    currentStepIndex.value++
+    stepStatuses.value[currentStepIndex.value] = 'active'
+    applyStep(currentStepIndex.value)
+  } catch (err: any) {
+    saveError.value = err.message ?? 'Failed to advance.'
+  } finally {
+    isSaving.value = false
+  }
 }
 
 function selectMovement(config: MovementConfig) {
@@ -233,14 +387,6 @@ const statusLabel = computed(() => {
     case 'locked':   return 'Measurement locked ✓'
   }
 })
-
-function skipStep() {
-  if (isDirectedMode.value && !isLastStep.value) {
-    nextStep()
-  } else if (isDirectedMode.value && isLastStep.value) {
-    finishSession()
-  }
-}
 </script>
 
 <style scoped>
@@ -268,7 +414,6 @@ function skipStep() {
   display: grid; grid-template-columns: 1fr 340px; gap: 2rem; align-items: start;
 }
 
-/* Camera */
 .camera-panel  { display: flex; flex-direction: column; gap: 0.75rem; }
 .camera-wrap {
   position: relative; background: var(--surface);
@@ -306,7 +451,6 @@ function skipStep() {
 }
 .locked-text { color: #fff; font-weight: 600; font-size: 1rem; }
 
-/* Active arm indicator */
 .arm-indicator {
   display: flex; align-items: center; gap: 0;
   background: var(--surface); border: 1px solid var(--border);
@@ -325,7 +469,6 @@ function skipStep() {
 }
 .arm-divider { width: 1px; background: var(--border); align-self: stretch; }
 
-/* Controls */
 .controls { display: flex; gap: 0.75rem; }
 .btn {
   padding: 0.55rem 1.2rem; border-radius: 8px; font-size: 0.875rem;
@@ -336,15 +479,12 @@ function skipStep() {
 .btn-primary  { background: var(--accent); color: #000; }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-ghost    { background: transparent; color: var(--text-muted); border-color: var(--border); }
-.btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+.btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text-muted); }
 .btn-reset-sm { background: transparent; color: var(--text-muted); border-color: var(--border); }
 .btn-reset-sm:hover { color: var(--text); border-color: var(--text-muted); }
-.btn-finish   { background: #4ade80; color: #000; font-weight: 700; border: none; cursor: pointer; }
-.btn-finish:hover { background: #86efac; }
 .btn-full     { width: 100%; padding: 0.75rem; border-radius: 8px; }
 .error-msg    { color: #f87171; font-size: 0.875rem; }
 
-/* Readout panel */
 .readout-panel {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;
@@ -358,13 +498,48 @@ function skipStep() {
 .notes-icon { font-size: 1rem; flex-shrink: 0; }
 .notes-text { font-size: 0.82rem; margin: 0; line-height: 1.5; }
 
-.step-indicator {
+/* Progress checklist */
+.progress-section { display: flex; flex-direction: column; gap: 0.6rem; }
+.progress-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.5rem 0.75rem; background: var(--bg);
-  border: 1px solid var(--border); border-radius: 6px;
 }
-.step-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
-.step-count { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; color: var(--accent); }
+.progress-label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.progress-count { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--accent); }
+.progress-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.progress-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.75rem; border-radius: 6px;
+  background: var(--bg); border: 1px solid var(--border);
+  transition: all 0.2s; font-size: 0.82rem;
+}
+.progress-item.done {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.35);
+  color: #4ade80;
+}
+.progress-item.active {
+  background: rgba(0,229,255,0.08);
+  border-color: rgba(0,229,255,0.4);
+  color: var(--text);
+}
+.progress-item.pending { opacity: 0.5; }
+.progress-check {
+  width: 22px; height: 22px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 0.78rem; font-weight: 700;
+  font-family: var(--font-mono);
+}
+.progress-item.done .progress-check {
+  background: #4ade80; color: #000;
+}
+.progress-item.active .progress-check {
+  background: var(--accent); color: #000;
+}
+.progress-item.pending .progress-check {
+  background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+}
+.progress-text { font-weight: 500; }
+.progress-item.active .progress-text { font-weight: 700; }
 
 .selector-label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 0.5rem; }
 .selector-tabs  { display: flex; gap: 0.5rem; flex-wrap: wrap; }
@@ -394,7 +569,7 @@ function skipStep() {
 
 .gauge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-.locked-actions  { display: flex; flex-direction: column; gap: 1rem; }
+.action-area     { display: flex; flex-direction: column; gap: 0.75rem; }
 .locked-summary  { display: flex; gap: 0.75rem; }
 .locked-result   {
   flex: 1; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25);

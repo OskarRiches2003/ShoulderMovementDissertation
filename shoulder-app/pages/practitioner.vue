@@ -124,16 +124,15 @@
               <p v-if="!selectedPatient" class="launch-warning">
                 ⚠ Select a patient before launching.
               </p>
-              <button
-                class="btn-launch"
-                :disabled="prescribedSteps.length === 0 || !selectedPatient"
-                @click="launchSession"
-              >
-                Launch Patient Session →
-              </button>
-              <p v-if="prescribedSteps.length === 0" class="launch-hint">
-                Select at least one movement to continue.
-              </p>
+                <button
+                  class="btn-launch"
+                  :disabled="prescribedSteps.length === 0 || !selectedPatient || isLaunching"
+                  @click="launchSession"
+                >
+                  <span v-if="isLaunching">Sending…</span>
+                  <span v-else>Send Session to Patient →</span>
+                </button>
+                <p v-if="launchError" class="form-error">{{ launchError }}</p>
             </div>
           </div>
         </section>
@@ -198,6 +197,10 @@ definePageMeta({ middleware: ['auth'] })
 
 const { signOut, profile } = useAuth()
 const { patients, isLoading: isLoadingPatients, createPatient } = usePatients()
+const { createSessionForPatient } = useSessions()
+
+const isLaunching = ref(false)
+const launchError = ref('')
 
 // ── Patient selection ──────────────────────────────────────────────────────────
 const selectedPatient = ref<Patient | null>(null)
@@ -296,13 +299,24 @@ const prescribedSteps = computed<SummaryStep[]>(() => {
 const hasBothFlexion = computed(() => selections.value.flexion === 'both')
 
 // ── Launch ─────────────────────────────────────────────────────────────────────
-function launchSession() {
+async function launchSession() {
   if (!selectedPatient.value) return
-  const params = encodeSessionConfig({
-    movements: prescribedSteps.value.map(s => ({ movementType: s.movementType, side: s.side })),
-    notes: notes.value,
-  })
-  window.open(`${window.location.origin}/capture?${params.toString()}&patientId=${selectedPatient.value.id}`, '_blank')
+  launchError.value = ''
+  isLaunching.value = true
+  try {
+    await createSessionForPatient({
+      patientId: selectedPatient.value.id,
+      movements: prescribedSteps.value.map(s => ({ movementType: s.movementType, side: s.side })),
+      notes: notes.value,
+    })
+    // Reset the builder after a successful launch
+    selections.value = { abduction: null, flexion: null, rotation: null }
+    notes.value = ''
+  } catch (err: any) {
+    launchError.value = err.message ?? 'Failed to send session.'
+  } finally {
+    isLaunching.value = false
+  }
 }
 </script>
 

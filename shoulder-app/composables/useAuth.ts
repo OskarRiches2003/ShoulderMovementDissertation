@@ -35,7 +35,6 @@ export function useAuth() {
 
       isLoading.value = false
 
-      // Only redirect if we are in the middle of an explicit sign-in attempt
       if (isSigningIn.value && firebaseUser && profile.value?.role) {
         isSigningIn.value = false
         redirectByRole()
@@ -51,7 +50,6 @@ export function useAuth() {
 
   async function signIn(email: string, password: string): Promise<void> {
     try {
-      // Set flag BEFORE the await so it is true when onAuthStateChanged fires
       isSigningIn.value = true
       await signInWithEmailAndPassword(auth(), email, password)
     } catch (err) {
@@ -68,8 +66,8 @@ export function useAuth() {
   function redirectByRole(): void {
     switch (role.value) {
       case 'practitioner': router.push('/practitioner'); break
-      case 'patient':      router.push('/capture');      break
-      case 'admin':        router.push('/admin');         break
+      case 'patient':      router.push('/patient');      break
+      case 'admin':        router.push('/admin');        break
       default:             router.push('/login');
     }
   }

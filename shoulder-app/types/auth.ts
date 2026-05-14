@@ -1,3 +1,5 @@
+import type { MovementType, Side } from '~/types/pose'
+
 export type UserRole = 'practitioner' | 'patient' | 'admin'
 
 export interface UserProfile {
@@ -5,36 +7,47 @@ export interface UserProfile {
   role: UserRole
   displayName: string
   email: string
-  createdAt: Date
+  createdAt: any
 }
 
 export interface Patient {
   id: string
-  uid: string                // Firebase Auth uid for the patient's account
-  createdBy: string          // Practitioner's uid
+  uid: string
+  createdBy: string
   displayName: string
+  email: string
   dateOfBirth?: string
   notes?: string
-  createdAt: Date
+  createdAt: any
 }
 
-export interface SessionMovementResult {
+// ── Session types ─────────────────────────────────────────────────────────────
+
+export interface SessionMovement {
+  movementType: MovementType
+  side: Side
+}
+
+export interface MovementResult {
+  movementType: MovementType
+  side: Side
   peakAngle: number
   readings: number[]
-  completedAt: Date
+  completedAt: any
 }
 
-export type SessionStatus = 'pending' | 'in-progress' | 'complete'
+export type SessionStatus = 'pending' | 'in-progress' | 'awaiting-review' | 'complete'
 
 export interface Session {
   id: string
   patientId: string
   practitionerId: string
-  movements: string[]          // ordered list of movement keys e.g. ['abduction', 'flexion']
-  side: 'left' | 'right' | 'both'
+  movements: SessionMovement[]
   notes?: string
-  results: Record<string, SessionMovementResult>
+  results: MovementResult[]
   status: SessionStatus
-  createdAt: Date
-  completedAt?: Date
+  createdAt: any
+  startedAt?: any
+  finishedAt?: any
+  reviewedAt?: any
 }
