@@ -1,23 +1,13 @@
 <template>
-  <!-- pages/dashboard.vue -->
-  <div class="dashboard">
-    <!-- Header -->
-    <header class="dash-header">
-      <div class="dash-header__inner">
-        <h1 class="dash-title">My Progress</h1>
-        <p class="dash-subtitle" v-if="user">{{ user.email }}</p>
-      </div>
-    </header>
-
+  <!-- components/PatientDashboard.vue -->
+  <div class="patient-dashboard">
     <!-- Loading -->
-    <div v-if="loading" class="state-screen">
+    <div v-if="loading" class="dash-loading">
       <span class="spinner" />
-      <p>Loading your sessions…</p>
     </div>
 
-    <!-- Main content -->
-    <main v-else class="dash-main">
-      <!-- Top-level tabs -->
+    <template v-else>
+      <!-- Tab bar -->
       <nav class="tab-bar">
         <button
           v-for="tab in tabs"
@@ -31,10 +21,10 @@
         </button>
       </nav>
 
-      <!-- ── Tab 1: Session History ─────────────────────────────────────── -->
-      <section v-show="activeTab === 'history'" class="tab-panel">
+      <!-- ── Session History ──────────────────────────────────────────────── -->
+      <section v-show="activeTab === 'history'">
         <div v-if="completedSessions.length === 0" class="empty-state">
-          <p>No completed sessions yet. Your history will appear here once you've finished a session.</p>
+          <p>No completed sessions yet. Your history will appear here after you finish a session.</p>
         </div>
 
         <div v-else class="session-list">
@@ -43,7 +33,6 @@
             :key="session.id"
             class="session-card"
           >
-            <!-- Card header -->
             <div class="session-card__header">
               <div>
                 <span class="session-card__date">{{ formatDate(toDate(session.createdAt)) }}</span>
@@ -54,7 +43,6 @@
               </span>
             </div>
 
-            <!-- Result rows -->
             <div class="session-card__movements">
               <div
                 v-for="result in session.results"
@@ -63,35 +51,27 @@
               >
                 <span class="movement-row__label">{{ result.label }}</span>
                 <div class="movement-row__angles">
-                  <span v-if="result.leftAngle != null" class="angle-chip angle-chip--left">
-                    L {{ result.leftAngle }}°
-                  </span>
-                  <span v-if="result.rightAngle != null" class="angle-chip angle-chip--right">
-                    R {{ result.rightAngle }}°
-                  </span>
-                  <span v-if="result.leftAngle == null && result.rightAngle == null" class="angle-chip angle-chip--na">
-                    —
-                  </span>
+                  <span v-if="result.leftAngle != null" class="angle-chip angle-chip--left">L {{ result.leftAngle }}°</span>
+                  <span v-if="result.rightAngle != null" class="angle-chip angle-chip--right">R {{ result.rightAngle }}°</span>
+                  <span v-if="result.leftAngle == null && result.rightAngle == null" class="angle-chip angle-chip--na">—</span>
                 </div>
               </div>
             </div>
 
-            <!-- Practitioner notes -->
             <p v-if="session.notes" class="session-card__notes">
-              <em>Note:</em> {{ session.notes }}
+              <em>Practitioner note:</em> {{ session.notes }}
             </p>
           </article>
         </div>
       </section>
 
-      <!-- ── Tab 2: Movement Progress ──────────────────────────────────── -->
-      <section v-show="activeTab === 'progress'" class="tab-panel">
+      <!-- ── Movement Progress ───────────────────────────────────────────── -->
+      <section v-show="activeTab === 'progress'">
         <div v-if="movementKeys.length === 0" class="empty-state">
           <p>Complete at least one session to see your progress graphs.</p>
         </div>
 
         <template v-else>
-          <!-- Movement sub-tabs -->
           <nav class="sub-tab-bar">
             <button
               v-for="key in movementKeys"
@@ -104,7 +84,6 @@
             </button>
           </nav>
 
-          <!-- Graph -->
           <div class="graph-panel" v-if="activeMovement">
             <h2 class="graph-panel__title">{{ movementLabel(activeMovement) }}</h2>
             <p class="graph-panel__meta">
@@ -117,52 +96,47 @@
           </div>
         </template>
       </section>
-    </main>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Timestamp } from 'firebase/firestore'
-import { useSessions } from '~/composables/useSessions'
-import { useAuth } from '~/composables/useAuth'
 import type { Session, MovementResult } from '~/types/auth'
 import { MOVEMENT_CONFIG_MAP } from '~/utils/movementConfigs'
 
-// ─── Auth ──────────────────────────────────────────────────────────────────
-const { user } = useAuth()
+const props = defineProps<{ patientId: string }>()
 
-// ─── Sessions (real-time listener via existing composable) ─────────────────
 const { watchSessionsForPatient } = useSessions()
 
+// ─── Data ──────────────────────────────────────────────────────────────────
 const allSessions = ref<Session[]>([])
 const loading = ref(true)
-
 let unsubscribe: (() => void) | null = null
 
-watchEffect(() => {
-  if (!user.value) return
-  unsubscribe?.()
-  loading.value = true
-
-  unsubscribe = watchSessionsForPatient(user.value.uid, (sessions) => {
-    allSessions.value = sessions
-    loading.value = false
-  })
-})
+watch(
+  () => props.patientId,
+  (id) => {
+    if (!id) return
+    unsubscribe?.()
+    loading.value = true
+    unsubscribe = watchSessionsForPatient(id, (sessions) => {
+      allSessions.value = sessions
+      loading.value = false
+    })
+  },
+  { immediate: true }
+)
 
 onUnmounted(() => unsubscribe?.())
 
-// Firestore stores one MovementResult per (movementType, side). Group them so
-// each movement renders as a single row with left/right peak angles.
+// Each session in Firestore has one MovementResult per (movementType, side).
+// The UI wants one row per movementType with left/right peak angles populated.
 interface GroupedMovement {
   movementType: string
   label: string
   leftAngle: number | null
   rightAngle: number | null
-}
-
-function prettifyKey(key: string): string {
-  return key.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function groupResults(results: MovementResult[] | undefined): GroupedMovement[] {
@@ -201,13 +175,12 @@ const completedSessions = computed(() =>
 // ─── Tabs ──────────────────────────────────────────────────────────────────
 const tabs = [
   { key: 'history', label: 'Session History' },
-  { key: 'progress', label: 'Movement Progress' },
+  { key: 'progress', label: 'Progress' },
 ] as const
 type TabKey = (typeof tabs)[number]['key']
 const activeTab = ref<TabKey>('history')
 
 // ─── Movement sub-tabs ─────────────────────────────────────────────────────
-
 const movementKeys = computed<string[]>(() => {
   const keys = new Set<string>()
   completedSessions.value.forEach((s) => s.results.forEach((r) => keys.add(r.movementType)))
@@ -215,35 +188,31 @@ const movementKeys = computed<string[]>(() => {
 })
 
 const activeMovement = ref('')
-
 watch(movementKeys, (keys) => {
   if (keys.length && !activeMovement.value) activeMovement.value = keys[0]
 })
 
 // ─── Chart series ──────────────────────────────────────────────────────────
-
 function getMovementSeries(movementKey: string) {
   return [...completedSessions.value]
     .filter((s) => s.results.some((r) => r.movementType === movementKey))
     .sort((a, b) => toDate(a.createdAt).getTime() - toDate(b.createdAt).getTime())
     .map((s) => {
       const r = s.results.find((r) => r.movementType === movementKey)!
-      return {
-        date: toDate(s.createdAt),
-        leftAngle: r.leftAngle,
-        rightAngle: r.rightAngle,
-      }
+      return { date: toDate(s.createdAt), leftAngle: r.leftAngle, rightAngle: r.rightAngle }
     })
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-
-/** Handles Firestore Timestamp, plain Date, or ISO string */
 function toDate(value: Timestamp | Date | string | undefined): Date {
   if (!value) return new Date()
   if (value instanceof Date) return value
   if (typeof value === 'string') return new Date(value)
   return (value as Timestamp).toDate()
+}
+
+function prettifyKey(key: string): string {
+  return key.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function movementLabel(key: string): string {
@@ -261,183 +230,168 @@ function formatTime(d: Date) {
 </script>
 
 <style scoped>
-.dashboard {
-  min-height: 100vh;
-  background: var(--color-bg, #f5f7fa);
-  font-family: var(--font-body, system-ui, sans-serif);
-}
+.patient-dashboard { margin-top: 2rem; }
 
-.dash-header {
-  background: var(--color-primary, #1a56db);
-  color: #fff;
-  padding: 1.75rem 1.5rem 1.5rem;
-}
-
-.dash-header__inner { max-width: 900px; margin: 0 auto; }
-
-.dash-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem;
-  letter-spacing: -0.02em;
-}
-
-.dash-subtitle { font-size: 0.85rem; opacity: 0.8; margin: 0; }
-
-.state-screen {
+.dash-loading {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 4rem 1rem;
-  color: var(--color-text-muted, #666);
+  padding: 2rem;
 }
 
 .spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(0,0,0,0.1);
-  border-top-color: var(--color-primary, #1a56db);
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0,229,255,0.15);
+  border-top-color: var(--accent, #00e5ff);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.dash-main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+/* ─── Tab bar ─────────────────────────────────────────────────────────────── */
 
 .tab-bar {
   display: flex;
   gap: 0.25rem;
-  border-bottom: 2px solid var(--color-border, #e0e6f0);
-  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
 }
 
 .tab-bar__item {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.6rem 1.1rem;
-  font-size: 0.95rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-text-muted, #666);
+  color: var(--text-muted);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
+  margin-bottom: -1px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+  font-family: var(--font-body);
 }
 
 .tab-bar__item--active {
-  color: var(--color-primary, #1a56db);
-  border-bottom-color: var(--color-primary, #1a56db);
+  color: var(--accent, #00e5ff);
+  border-bottom-color: var(--accent, #00e5ff);
 }
 
 .tab-badge {
-  background: var(--color-primary, #1a56db);
-  color: #fff;
-  font-size: 0.72rem;
+  background: var(--accent, #00e5ff);
+  color: #000;
+  font-size: 0.68rem;
   font-weight: 700;
   border-radius: 999px;
-  padding: 0 0.45rem;
+  padding: 0 0.4rem;
   line-height: 1.5;
 }
 
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
-  color: var(--color-text-muted, #888);
-  font-size: 0.95rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 
-.session-list { display: flex; flex-direction: column; gap: 1rem; }
+/* ─── Session list ────────────────────────────────────────────────────────── */
+
+.session-list { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .session-card {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #e0e6f0);
-  border-radius: 12px;
-  padding: 1.1rem 1.25rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
 }
 
 .session-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.75rem;
 }
 
-.session-card__date { font-weight: 600; font-size: 0.95rem; color: var(--color-text, #1a1a2e); margin-right: 0.5rem; }
-.session-card__time { font-size: 0.82rem; color: var(--color-text-muted, #888); }
+.session-card__date { font-weight: 600; font-size: 0.9rem; color: var(--text); margin-right: 0.5rem; }
+.session-card__time { font-size: 0.78rem; color: var(--text-muted); }
 
 .session-card__badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  background: var(--color-bg, #f0f4ff);
-  color: var(--color-primary, #1a56db);
+  background: rgba(0,229,255,0.08);
+  color: var(--accent, #00e5ff);
+  border: 1px solid rgba(0,229,255,0.2);
   border-radius: 999px;
-  padding: 0.2rem 0.6rem;
+  padding: 0.15rem 0.55rem;
 }
 
-.session-card__movements { display: flex; flex-direction: column; gap: 0.5rem; }
+.session-card__movements { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .movement-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.45rem 0.6rem;
-  background: var(--color-bg, #f8fafc);
-  border-radius: 8px;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 7px;
 }
 
-.movement-row__label { font-size: 0.88rem; font-weight: 500; color: var(--color-text, #1a1a2e); }
-.movement-row__angles { display: flex; gap: 0.4rem; }
+.movement-row__label { font-size: 0.83rem; font-weight: 500; color: var(--text); }
+.movement-row__angles { display: flex; gap: 0.35rem; }
 
-.angle-chip { font-size: 0.8rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 6px; }
-.angle-chip--left  { background: rgba(74,158,255,0.12); color: #1a56db; }
-.angle-chip--right { background: rgba(255,124,74,0.12);  color: #c0430a; }
-.angle-chip--na    { background: #f0f0f0; color: #aaa; }
+.angle-chip { font-size: 0.76rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 5px; }
+.angle-chip--left  { background: rgba(74,158,255,0.15); color: #4a9eff; }
+.angle-chip--right { background: rgba(255,124,74,0.15);  color: #ff7c4a; }
+.angle-chip--na    { background: rgba(255,255,255,0.05); color: var(--text-muted); }
 
 .session-card__notes {
-  margin-top: 0.75rem;
-  font-size: 0.82rem;
-  color: var(--color-text-muted, #777);
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--color-border, #eef0f5);
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
 }
 
-.sub-tab-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.5rem; }
+/* ─── Sub-tab bar ─────────────────────────────────────────────────────────── */
+
+.sub-tab-bar { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1.25rem; }
 
 .sub-tab-bar__item {
-  padding: 0.45rem 0.9rem;
-  font-size: 0.85rem;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  color: var(--color-text-muted, #666);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #dde2ef);
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 999px;
   cursor: pointer;
+  font-family: var(--font-body);
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .sub-tab-bar__item--active {
-  background: var(--color-primary, #1a56db);
-  color: #fff;
-  border-color: var(--color-primary, #1a56db);
+  background: rgba(0,229,255,0.1);
+  color: var(--accent, #00e5ff);
+  border-color: rgba(0,229,255,0.3);
 }
+
+/* ─── Graph panel ─────────────────────────────────────────────────────────── */
 
 .graph-panel {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #e0e6f0);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
 }
 
-.graph-panel__title { font-size: 1.1rem; font-weight: 600; color: var(--color-text, #1a1a2e); margin: 0 0 0.2rem; }
-.graph-panel__meta { font-size: 0.82rem; color: var(--color-text-muted, #888); margin: 0 0 1.25rem; }
+.graph-panel__title { font-size: 1rem; font-weight: 600; color: var(--text); margin: 0 0 0.2rem; font-family: var(--font-display); }
+.graph-panel__meta  { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 1rem; }
 </style>
