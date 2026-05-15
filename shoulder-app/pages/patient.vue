@@ -29,10 +29,7 @@
       </section>
 
       <!-- Dashboard placeholder -->
-      <section class="dashboard-placeholder">
-        <h3 class="placeholder-title">Progress Dashboard</h3>
-        <p class="placeholder-sub">Coming soon — your session history and progress over time will appear here.</p>
-      </section>
+      <PatientDashboard v-if="user" :patient-id="user.uid" />
     </main>
   </div>
 </template>
