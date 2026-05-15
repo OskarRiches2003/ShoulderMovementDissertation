@@ -51,8 +51,8 @@
               >
                 <span class="movement-row__label">{{ result.label }}</span>
                 <div class="movement-row__angles">
-                  <span v-if="result.leftAngle != null" class="angle-chip angle-chip--left">L {{ result.leftAngle }}°</span>
-                  <span v-if="result.rightAngle != null" class="angle-chip angle-chip--right">R {{ result.rightAngle }}°</span>
+                  <span v-if="result.leftAngle != null" class="angle-chip angle-chip--left">L {{ Number(result.leftAngle).toFixed(1) }}°</span>
+<span v-if="result.rightAngle != null" class="angle-chip angle-chip--right">R {{ Number(result.rightAngle).toFixed(1) }}°</span>
                   <span v-if="result.leftAngle == null && result.rightAngle == null" class="angle-chip angle-chip--na">—</span>
                 </div>
               </div>

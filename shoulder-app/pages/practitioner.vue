@@ -46,94 +46,115 @@
         </aside>
 
         <!-- ── Right column: Session builder ────────────────────────────── -->
-        <section class="panel panel-builder">
+       <section class="panel panel-builder">
           <div class="panel-header">
-            <h2 class="panel-title">Session Builder</h2>
+            <div class="panel-tabs">
+              <button
+                class="panel-tab"
+                :class="{ 'panel-tab--active': rightTab === 'builder' }"
+                @click="rightTab = 'builder'"
+              >Session Builder</button>
+              <button
+                class="panel-tab"
+                :class="{ 'panel-tab--active': rightTab === 'history' }"
+                :disabled="!selectedPatient"
+                @click="rightTab = 'history'"
+              >Patient History</button>
+            </div>
             <span v-if="selectedPatient" class="selected-patient-badge">
               {{ selectedPatient.displayName }}
             </span>
           </div>
+          
+          <div v-show="rightTab === 'builder'">
+            <!-- Movement picker -->
+            <div class="card">
+              <h3 class="card-title">Select Movements</h3>
+              <p class="card-sub">Choose a side for each movement to include in this session.</p>
 
-          <!-- Movement picker -->
-          <div class="card">
-            <h3 class="card-title">Select Movements</h3>
-            <p class="card-sub">Choose a side for each movement to include in this session.</p>
-
-            <div class="movement-list">
-              <div
-                v-for="row in PRACTITIONER_ROWS"
-                :key="row.id"
-                class="movement-row"
-                :class="{ selected: selectionFor(row.id) !== null }"
-              >
-                <div class="movement-meta">
-                  <span class="movement-name">{{ row.label }}</span>
-                  <span class="movement-plane">{{ row.plane }}</span>
+              <div class="movement-list">
+                <div
+                  v-for="row in PRACTITIONER_ROWS"
+                  :key="row.id"
+                  class="movement-row"
+                  :class="{ selected: selectionFor(row.id) !== null }"
+                >
+                  <div class="movement-meta">
+                    <span class="movement-name">{{ row.label }}</span>
+                    <span class="movement-plane">{{ row.plane }}</span>
+                  </div>
+                  <div class="side-btns">
+                    <button
+                      v-for="side in row.sides"
+                      :key="side"
+                      class="side-btn"
+                      :class="{ active: selectionFor(row.id) === side }"
+                      @click="selectSide(row.id, side)"
+                    >
+                      {{ sideLabel(side) }}
+                    </button>
+                  </div>
                 </div>
-                <div class="side-btns">
+              </div>
+            </div>
+
+            <!-- Notes + summary -->
+            <div class="card">
+              <h3 class="card-title">Session Details</h3>
+
+              <div class="field">
+                <label class="field-label" for="notes">Session notes</label>
+                <textarea
+                  id="notes"
+                  v-model="notes"
+                  class="field-textarea"
+                  rows="3"
+                  placeholder="e.g. Focus on left shoulder, patient reports pain above 90°…"
+                />
+              </div>
+
+              <div class="summary">
+                <h4 class="summary-title">Summary</h4>
+                <div v-if="prescribedSteps.length === 0" class="summary-empty">
+                  No movements selected yet.
+                </div>
+                <ol v-else class="summary-list">
+                  <li v-for="(step, i) in prescribedSteps" :key="i" class="summary-item">
+                    <span class="summary-index">{{ i + 1 }}</span>
+                    <span class="summary-movement">{{ step.label }}</span>
+                    <span class="summary-side">{{ step.sideLabel }}</span>
+                  </li>
+                </ol>
+                <p v-if="hasBothFlexion" class="summary-hint">
+                  ℹ Flexion (Both) splits into two recordings — left first, then right.
+                </p>
+                <div v-if="notes" class="summary-notes">
+                  <span class="summary-notes-label">Notes:</span> {{ notes }}
+                </div>
+              </div>
+
+              <div class="launch-area">
+                <p v-if="!selectedPatient" class="launch-warning">
+                  ⚠ Select a patient before launching.
+                </p>
                   <button
-                    v-for="side in row.sides"
-                    :key="side"
-                    class="side-btn"
-                    :class="{ active: selectionFor(row.id) === side }"
-                    @click="selectSide(row.id, side)"
+                    class="btn-launch"
+                    :disabled="prescribedSteps.length === 0 || !selectedPatient || isLaunching"
+                    @click="launchSession"
                   >
-                    {{ sideLabel(side) }}
+                    <span v-if="isLaunching">Sending…</span>
+                    <span v-else>Send Session to Patient →</span>
                   </button>
-                </div>
+                  <p v-if="launchError" class="form-error">{{ launchError }}</p>
               </div>
             </div>
           </div>
 
-          <!-- Notes + summary -->
-          <div class="card">
-            <h3 class="card-title">Session Details</h3>
-
-            <div class="field">
-              <label class="field-label" for="notes">Session notes</label>
-              <textarea
-                id="notes"
-                v-model="notes"
-                class="field-textarea"
-                rows="3"
-                placeholder="e.g. Focus on left shoulder, patient reports pain above 90°…"
-              />
+          <div v-show="rightTab === 'history'" class="history-panel">
+            <div v-if="!selectedPatient" class="state-msg state-empty">
+              Select a patient to view their history.
             </div>
-
-            <div class="summary">
-              <h4 class="summary-title">Summary</h4>
-              <div v-if="prescribedSteps.length === 0" class="summary-empty">
-                No movements selected yet.
-              </div>
-              <ol v-else class="summary-list">
-                <li v-for="(step, i) in prescribedSteps" :key="i" class="summary-item">
-                  <span class="summary-index">{{ i + 1 }}</span>
-                  <span class="summary-movement">{{ step.label }}</span>
-                  <span class="summary-side">{{ step.sideLabel }}</span>
-                </li>
-              </ol>
-              <p v-if="hasBothFlexion" class="summary-hint">
-                ℹ Flexion (Both) splits into two recordings — left first, then right.
-              </p>
-              <div v-if="notes" class="summary-notes">
-                <span class="summary-notes-label">Notes:</span> {{ notes }}
-              </div>
-            </div>
-
-            <div class="launch-area">
-              <p v-if="!selectedPatient" class="launch-warning">
-                ⚠ Select a patient before launching.
-              </p>
-                <button
-                  class="btn-launch"
-                  :disabled="prescribedSteps.length === 0 || !selectedPatient || isLaunching"
-                  @click="launchSession"
-                >
-                  <span v-if="isLaunching">Sending…</span>
-                  <span v-else>Send Session to Patient →</span>
-                </button>
-                <p v-if="launchError" class="form-error">{{ launchError }}</p>
-            </div>
+            <PatientDashboard v-else :patient-id="selectedPatient.id" />
           </div>
         </section>
 
@@ -203,11 +224,18 @@ const isLaunching = ref(false)
 const launchError = ref('')
 
 // ── Patient selection ──────────────────────────────────────────────────────────
+// replace the existing selectedPatient ref line
 const selectedPatient = ref<Patient | null>(null)
+
+watch(selectedPatient, () => {
+  rightTab.value = 'builder'
+})
 
 function initials(name: string): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
+
+const rightTab = ref<'builder' | 'history'>('builder')
 
 // ── New patient modal ──────────────────────────────────────────────────────────
 const showNewPatient = ref(false)
@@ -497,4 +525,37 @@ async function launchSession() {
 }
 .btn-create:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-create:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.panel-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.panel-tab {
+  padding: 0.3rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.panel-tab--active {
+  background: rgba(0,229,255,0.1);
+  color: var(--accent);
+  border-color: rgba(0,229,255,0.3);
+}
+
+.panel-tab:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.history-panel {
+  padding: 0 1.5rem 1.5rem;
+}
 </style>
